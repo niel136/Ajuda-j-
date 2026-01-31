@@ -1,3 +1,4 @@
+
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
@@ -34,10 +35,12 @@ const injectManifest = () => {
 
 injectManifest();
 
-// Progressive Service Worker registration
-if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {
+// Progressive Service Worker registration - Safe check for Production
+// Fix: Use process.env instead of import.meta.env to resolve TypeScript error
+const isProd = process.env.NODE_ENV === 'production';
+
+if ('serviceWorker' in navigator && isProd) {
   window.addEventListener('load', () => {
-    // Note: service-worker.js must be in the public/dist root
     navigator.serviceWorker.register('/service-worker.js')
       .then(reg => console.log('SW registered'))
       .catch(err => console.warn('SW failed', err));
@@ -60,5 +63,7 @@ if (rootElement) {
     if (fallbackElement) fallbackElement.style.display = 'block';
   }
 } else {
-  if (fallbackElement) fallbackElement.style.display = 'block';
+  if (fallbackElement) {
+    fallbackElement.style.display = 'block';
+  }
 }

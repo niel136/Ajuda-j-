@@ -27,23 +27,24 @@
       .page-transition { animation: fadeIn 0.3s ease-in-out; }
       @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
       
-      /* Fail-safe visibility */
       .app-error {
         display: none;
-        padding: 20px;
+        padding: 40px 20px;
         text-align: center;
         color: #1a1a1a;
+        background: #E2F687;
+        min-height: 100vh;
       }
     </style>
   <script type="importmap">
 {
   "imports": {
+    "lucide-react": "https://esm.sh/lucide-react@^0.563.0",
+    "@google/genai": "https://esm.sh/@google/genai@^1.39.0",
     "react/": "https://esm.sh/react@^19.2.4/",
     "react": "https://esm.sh/react@^19.2.4",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
-    "@google/genai": "https://esm.sh/@google/genai@^1.38.0",
     "react-router-dom": "https://esm.sh/react-router-dom@^7.13.0",
-    "lucide-react": "https://esm.sh/lucide-react@^0.563.0"
+    "react-dom/": "https://esm.sh/react-dom@^19.2.4/"
   }
 }
 </script>
@@ -51,7 +52,9 @@
   <body class="bg-[#E2F687] text-slate-900 antialiased selection:bg-black selection:text-[#E2F687]">
     <div id="root"></div>
     <div id="fallback-error" class="app-error">
-      <p>Ocorreu um erro ao carregar o aplicativo. Por favor, recarregue a página.</p>
+      <h2 style="font-weight: 800; font-size: 1.5rem; margin-bottom: 1rem;">Ops! Algo deu errado.</h2>
+      <p>O aplicativo não conseguiu iniciar. Por favor, tente recarregar ou verifique sua conexão.</p>
+      <button onclick="location.reload()" style="margin-top: 20px; padding: 10px 20px; background: black; color: #E2F687; border: none; border-radius: 99px; font-weight: bold;">Recarregar App</button>
     </div>
     <script type="module" src="/index.tsx"></script>
   </body>

@@ -5,7 +5,7 @@ export const enhanceDescription = async (
   category: string
 ): Promise<string> => {
   try {
-    // Initialize GoogleGenAI inside the function to use the most current API key from process.env.API_KEY
+    // Inicialização conforme diretrizes: named parameter e process.env.API_KEY
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     
     const prompt = `
@@ -27,7 +27,7 @@ export const enhanceDescription = async (
       contents: prompt,
     });
 
-    // Access the .text property directly from the response object
+    // Acesso direto à propriedade .text conforme especificação
     return response.text || rawText;
   } catch (error) {
     console.error("Error enhancing description:", error);

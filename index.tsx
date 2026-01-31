@@ -34,15 +34,10 @@ const injectManifest = () => {
 
 injectManifest();
 
-// Progressive Service Worker registration - Safe check for Production using Vite env
-// Fix: Using type assertion for import.meta to avoid TypeScript environment-specific errors
-const isProd = (import.meta as any).env?.PROD;
-
-if ('serviceWorker' in navigator && isProd) {
+// Registro seguro do Service Worker
+if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/service-worker.js')
-      .then(reg => console.log('SW registered'))
-      .catch(err => console.warn('SW failed', err));
+    navigator.serviceWorker.register('/service-worker.js').catch(() => {});
   });
 }
 
@@ -60,9 +55,5 @@ if (rootElement) {
   } catch (error) {
     console.error("Critical Render Error:", error);
     if (fallbackElement) fallbackElement.style.display = 'block';
-  }
-} else {
-  if (fallbackElement) {
-    fallbackElement.style.display = 'block';
   }
 }

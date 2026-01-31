@@ -2,82 +2,85 @@
 <html lang="pt-BR">
   <head>
     <meta charset="utf-8" />
-    <!-- Viewport otimizado para evitar zoom em inputs e escala fixa de App -->
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
     <title>AjudaJá</title>
-    <meta name="description" content="Solidariedade Instantânea" />
     <meta name="theme-color" content="#E2F687" />
-    
-    <!-- Meta tags para iOS 'Add to Home Screen' -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="apple-touch-icon" href="https://picsum.photos/192/192">
-
-    <script>
-      window.process = window.process || { env: { NODE_ENV: 'production' } };
-    </script>
-
+    
+    <script>window.process = { env: { NODE_ENV: 'production' } };</script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
     <style>
+      *, *::before, *::after {
+        box-sizing: border-box; /* Fundamental para evitar overflow */
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+      
       :root {
-        --app-bg: #E2F687;
+        --primary: #E2F687;
+        --app-bg: #F8FAF5; /* Fundo levemente mais suave para contraste com cards brancos */
       }
-      * {
-        -webkit-tap-highlight-color: transparent;
-        touch-action: manipulation;
-      }
+
       body { 
         font-family: 'Plus Jakarta Sans', sans-serif; 
         background-color: var(--app-bg); 
         margin: 0;
         padding: 0;
         overflow-x: hidden;
-        /* Evita o bounce excessivo e scroll horizontal */
-        overscroll-behavior-y: none;
-      }
-      #root { 
-        min-height: 100dvh;
-        display: flex;
-        flex-direction: column;
-      }
-      /* Esconde scrollbars */
-      ::-webkit-scrollbar { display: none; }
-      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-      
-      /* Animações fluidas de App */
-      .page-transition { animation: slideIn 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
-      @keyframes slideIn { 
-        from { opacity: 0; transform: translateY(8px); } 
-        to { opacity: 1; transform: translateY(0); } 
+        width: 100%;
+        overscroll-behavior-y: contain;
       }
 
-      /* Safe area helpers */
+      #root { 
+        min-height: 100dvh;
+        width: 100%;
+        max-width: 100vw;
+        overflow-x: hidden;
+      }
+
+      /* Utilitários de texto nativo */
+      .text-balance { text-wrap: balance; }
+      .line-clamp-2 {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;  
+        overflow: hidden;
+      }
+
+      /* Custom scroll para não poluir visual */
+      ::-webkit-scrollbar { display: none; }
+
+      /* Safe Areas */
       .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
       .pt-safe { padding-top: env(safe-area-inset-top); }
 
-      /* Fix para inputs no iOS não darem zoom */
-      input, textarea, select { font-size: 16px !important; }
+      /* Feedback de toque nativo */
+      .btn-active:active { transform: scale(0.96); opacity: 0.9; }
+      
+      @keyframes slideUp {
+        from { transform: translateY(20px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+      }
+      .animate-app-in { animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
     </style>
-  <script type="importmap">
-{
-  "imports": {
-    "lucide-react": "https://esm.sh/lucide-react@^0.563.0",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
-    "react/": "https://esm.sh/react@^19.2.4/",
-    "react": "https://esm.sh/react@^19.2.4",
-    "react-router-dom": "https://esm.sh/react-router-dom@^7.13.0",
-    "@google/genai": "https://esm.sh/@google/genai@^1.39.0"
-  }
-}
-</script>
-</head>
-  <body class="bg-[#E2F687] text-slate-900 antialiased selection:bg-black selection:text-[#E2F687]">
+    <script type="importmap">
+    {
+      "imports": {
+        "lucide-react": "https://esm.sh/lucide-react@^0.563.0",
+        "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
+        "react/": "https://esm.sh/react@^19.2.4/",
+        "react": "https://esm.sh/react@^19.2.4",
+        "react-router-dom": "https://esm.sh/react-router-dom@^7.13.0",
+        "@google/genai": "https://esm.sh/@google/genai@^1.39.0"
+      }
+    }
+    </script>
+  </head>
+  <body class="selection:bg-black selection:text-[#E2F687]">
     <div id="root"></div>
-    <div id="fallback-error" class="hidden p-10 text-center">
-      <h2 class="font-extrabold text-xl mb-4">Erro de Inicialização</h2>
-      <button onclick="location.reload()" class="bg-black text-white px-6 py-3 rounded-full">Recarregar</button>
-    </div>
     <script type="module" src="/index.tsx"></script>
   </body>
 </html>

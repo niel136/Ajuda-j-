@@ -2,13 +2,17 @@
 <html lang="pt-BR">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes, viewport-fit=cover" />
-    <title>AjudaJá - Solidariedade Rápida</title>
-    <meta name="description" content="Conecte-se a necessidades reais e urgentes na sua comunidade." />
+    <!-- Viewport otimizado para evitar zoom em inputs e escala fixa de App -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <title>AjudaJá</title>
+    <meta name="description" content="Solidariedade Instantânea" />
     <meta name="theme-color" content="#E2F687" />
+    
+    <!-- Meta tags para iOS 'Add to Home Screen' -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    
+    <link rel="apple-touch-icon" href="https://picsum.photos/192/192">
+
     <script>
       window.process = window.process || { env: { NODE_ENV: 'production' } };
     </script>
@@ -16,32 +20,44 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
+      :root {
+        --app-bg: #E2F687;
+      }
+      * {
+        -webkit-tap-highlight-color: transparent;
+        touch-action: manipulation;
+      }
       body { 
         font-family: 'Plus Jakarta Sans', sans-serif; 
-        -webkit-tap-highlight-color: transparent; 
-        background-color: #E2F687; 
+        background-color: var(--app-bg); 
         margin: 0;
         padding: 0;
-        min-height: 100vh;
+        overflow-x: hidden;
+        /* Evita o bounce excessivo e scroll horizontal */
+        overscroll-behavior-y: none;
       }
-      #root { min-height: 100vh; }
+      #root { 
+        min-height: 100dvh;
+        display: flex;
+        flex-direction: column;
+      }
+      /* Esconde scrollbars */
       ::-webkit-scrollbar { display: none; }
       .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-      .page-transition { animation: fadeIn 0.3s ease-in-out; }
-      @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
       
-      /* Safe areas for notched phones */
-      .pt-safe { padding-top: env(safe-area-inset-top); }
-      .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
-
-      .app-error {
-        display: none;
-        padding: 40px 20px;
-        text-align: center;
-        color: #1a1a1a;
-        background: #E2F687;
-        min-height: 100vh;
+      /* Animações fluidas de App */
+      .page-transition { animation: slideIn 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
+      @keyframes slideIn { 
+        from { opacity: 0; transform: translateY(8px); } 
+        to { opacity: 1; transform: translateY(0); } 
       }
+
+      /* Safe area helpers */
+      .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+      .pt-safe { padding-top: env(safe-area-inset-top); }
+
+      /* Fix para inputs no iOS não darem zoom */
+      input, textarea, select { font-size: 16px !important; }
     </style>
   <script type="importmap">
 {
@@ -58,10 +74,9 @@
 </head>
   <body class="bg-[#E2F687] text-slate-900 antialiased selection:bg-black selection:text-[#E2F687]">
     <div id="root"></div>
-    <div id="fallback-error" class="app-error">
-      <h2 style="font-weight: 800; font-size: 1.5rem; margin-bottom: 1rem;">Ops! Algo deu errado.</h2>
-      <p>O aplicativo não conseguiu iniciar. Por favor, tente recarregar.</p>
-      <button onclick="location.reload()" style="margin-top: 20px; padding: 12px 24px; background: black; color: #E2F687; border: none; border-radius: 99px; font-weight: bold; cursor: pointer;">Recarregar App</button>
+    <div id="fallback-error" class="hidden p-10 text-center">
+      <h2 class="font-extrabold text-xl mb-4">Erro de Inicialização</h2>
+      <button onclick="location.reload()" class="bg-black text-white px-6 py-3 rounded-full">Recarregar</button>
     </div>
     <script type="module" src="/index.tsx"></script>
   </body>

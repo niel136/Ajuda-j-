@@ -2,12 +2,12 @@ import React from 'react';
 import { useApp } from '../context/AppContext';
 import { useNotification } from '../context/NotificationContext';
 import Button from '../components/Button';
-import { Bell, MapPin, Tag, Shield, LogOut } from 'lucide-react';
+import { Bell, Shield, LogOut, ChevronRight, Settings, History, Heart, CreditCard, Share2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const Profile: React.FC = () => {
   const { user, logout } = useApp();
-  const { permission, requestPermission, preferences, updatePreferences } = useNotification();
+  const { permission, requestPermission } = useNotification();
   const navigate = useNavigate();
 
   if (!user) {
@@ -17,116 +17,119 @@ const Profile: React.FC = () => {
 
   const handleLogout = () => {
     logout();
-    navigate('/');
+    navigate('/onboarding');
+  };
+
+  const getRoleLabel = () => {
+    switch(user.role) {
+        case 'donor': return 'Doador Ativo';
+        case 'beneficiary': return 'Beneficiário';
+        case 'business': return 'Instituição';
+        case 'admin': return 'Administrador';
+        default: return 'Voluntário';
+    }
   };
 
   return (
-    <div className="max-w-xl mx-auto space-y-6">
-      <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4">
-        <img 
-          src={user.avatarUrl || 'https://picsum.photos/100/100'} 
-          alt={user.name} 
-          className="w-16 h-16 rounded-full object-cover border-2 border-blue-100"
-        />
-        <div>
-          <h1 className="text-xl font-bold text-slate-900">{user.name}</h1>
-          <p className="text-slate-500 text-sm">{user.email}</p>
-          <span className="inline-block mt-1 px-2 py-0.5 bg-blue-100 text-blue-800 text-xs font-bold rounded uppercase">
-            {user.role === 'admin' ? 'Administrador' : 'Voluntário'}
-          </span>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
-        <div className="p-4 bg-slate-50 border-b border-slate-100">
-          <h2 className="font-bold text-slate-800 flex items-center">
-            <Bell size={20} className="mr-2 text-blue-600" /> Preferências de Notificação
-          </h2>
-        </div>
-
-        <div className="p-6 space-y-6">
-          {/* Permission Status */}
-          <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
-            <div>
-              <p className="font-medium text-slate-900">Status das Notificações</p>
-              <p className="text-sm text-slate-500">
-                {permission === 'granted' ? 'Ativo e funcionando.' : 
-                 permission === 'denied' ? 'Bloqueado no navegador.' : 'Ainda não ativado.'}
-              </p>
+    <div className="flex flex-col gap-8">
+      {/* HEADER DO PERFIL */}
+      <section className="flex flex-col items-center pt-4">
+        <div className="relative group">
+            <img 
+              src={user.avatarUrl || 'https://picsum.photos/150/150'} 
+              alt={user.name} 
+              className="w-32 h-32 rounded-[3rem] object-cover border-4 border-white shadow-2xl"
+            />
+            <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-black rounded-2xl flex items-center justify-center text-[#E2F687] shadow-xl border-4 border-[#F8FAF5]">
+                <Settings size={18} />
             </div>
-            {permission !== 'granted' && (
-              <Button size="sm" onClick={requestPermission}>Ativar</Button>
-            )}
-            {permission === 'granted' && (
-              <span className="text-green-600 font-bold text-sm flex items-center"><Shield size={14} className="mr-1"/> Ativado</span>
-            )}
+        </div>
+        
+        <div className="text-center mt-6">
+          <h1 className="text-3xl font-extrabold text-black tracking-tighter">{user.name}</h1>
+          <div className="inline-flex items-center gap-2 mt-1 px-4 py-1.5 bg-black text-[#E2F687] text-[10px] font-black rounded-full uppercase tracking-widest">
+            {getRoleLabel()}
           </div>
+        </div>
+      </section>
 
-          <div className="space-y-4">
-            <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider">Eu quero saber quando...</h3>
-            
-            <label className="flex items-start cursor-pointer">
-              <input 
-                type="checkbox" 
-                className="mt-1 h-4 w-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500"
-                checked={preferences.newRequestsNearby}
-                onChange={e => updatePreferences({ newRequestsNearby: e.target.checked })}
-              />
-              <div className="ml-3">
-                <span className="block text-sm font-medium text-slate-700">Novos pedidos próximos a mim</span>
-                <span className="block text-xs text-slate-500">Alertas baseados na sua localização atual.</span>
-              </div>
-            </label>
+      {/* DASHBOARD DE IMPACTO */}
+      <div className="grid grid-cols-2 gap-4">
+         <div className="bg-white p-5 rounded-[2rem] border border-black/5 flex flex-col gap-2">
+            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Ajudas Realizadas</span>
+            <div className="flex items-end gap-1">
+                <span className="text-2xl font-extrabold">{user.stats.donationsCount}</span>
+                <Heart size={16} className="text-red-500 mb-1" fill="currentColor" />
+            </div>
+         </div>
+         <div className="bg-white p-5 rounded-[2rem] border border-black/5 flex flex-col gap-2">
+            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Total Doado</span>
+            <div className="flex items-end gap-1">
+                <span className="text-2xl font-extrabold text-black">R$ {user.stats.totalDonated}</span>
+            </div>
+         </div>
+      </div>
 
-            <label className="flex items-start cursor-pointer">
-              <input 
-                type="checkbox" 
-                className="mt-1 h-4 w-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500"
-                checked={preferences.myRequestUpdates}
-                onChange={e => updatePreferences({ myRequestUpdates: e.target.checked })}
-              />
-              <div className="ml-3">
-                <span className="block text-sm font-medium text-slate-700">Atualizações nos meus pedidos</span>
-                <span className="block text-xs text-slate-500">Quando receber uma doação ou aprovação.</span>
-              </div>
-            </label>
-          </div>
+      {/* MENU DE OPÇÕES - ESTILO IOS */}
+      <div className="bg-white rounded-[2.5rem] border border-black/5 overflow-hidden">
+        <div className="p-4 border-b border-black/5 flex items-center justify-between">
+            <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest px-2">Minha Conta</h3>
+        </div>
+        
+        <div className="flex flex-col">
+            <button className="flex items-center justify-between p-5 hover:bg-gray-50 active:scale-[0.98] transition-all">
+                <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 bg-blue-50 text-blue-500 rounded-xl flex items-center justify-center"><History size={20} /></div>
+                    <span className="font-bold text-gray-900">Histórico de Atividade</span>
+                </div>
+                <ChevronRight size={18} className="text-gray-300" />
+            </button>
 
-          <div className="space-y-4 pt-4 border-t border-slate-100">
-             <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider flex items-center">
-               <Tag size={14} className="mr-1"/> Interesses de Causa
-             </h3>
-             <div className="flex flex-wrap gap-2">
-               {['Alimentação', 'Saúde', 'Reforma', 'Educação'].map(cat => (
-                 <button
-                   key={cat}
-                   onClick={() => {
-                     const current = preferences.categories;
-                     const newCats = current.includes(cat) 
-                       ? current.filter(c => c !== cat)
-                       : [...current, cat];
-                     updatePreferences({ categories: newCats });
-                   }}
-                   className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
-                     preferences.categories.includes(cat)
-                       ? 'bg-blue-100 text-blue-800 border-blue-200'
-                       : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
-                   }`}
-                 >
-                   {cat}
-                 </button>
-               ))}
-             </div>
-          </div>
+            <button className="flex items-center justify-between p-5 hover:bg-gray-50 active:scale-[0.98] transition-all border-t border-black/5">
+                <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 bg-orange-50 text-orange-500 rounded-xl flex items-center justify-center"><CreditCard size={20} /></div>
+                    <span className="font-bold text-gray-900">Formas de Pagamento</span>
+                </div>
+                <ChevronRight size={18} className="text-gray-300" />
+            </button>
+
+            <button className="flex items-center justify-between p-5 hover:bg-gray-50 active:scale-[0.98] transition-all border-t border-black/5">
+                <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 bg-green-50 text-green-500 rounded-xl flex items-center justify-center"><Share2 size={20} /></div>
+                    <span className="font-bold text-gray-900">Convidar Amigos</span>
+                </div>
+                <ChevronRight size={18} className="text-gray-300" />
+            </button>
         </div>
       </div>
 
-      <Button variant="outline" fullWidth className="text-red-600 border-red-100 hover:bg-red-50" onClick={handleLogout}>
-        <LogOut size={18} className="mr-2" /> Sair da conta
-      </Button>
+      {/* NOTIFICAÇÕES */}
+      <div className="bg-white p-6 rounded-[2.5rem] border border-black/5 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+            <div className="w-10 h-10 bg-indigo-50 text-indigo-500 rounded-xl flex items-center justify-center"><Bell size={20} /></div>
+            <div>
+                <span className="font-bold text-gray-900 block">Notificações</span>
+                <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{permission === 'granted' ? 'Ativadas' : 'Desativadas'}</span>
+            </div>
+        </div>
+        {permission !== 'granted' && (
+            <Button size="sm" variant="black" onClick={requestPermission}>Ativar</Button>
+        )}
+        {permission === 'granted' && (
+            <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-600">
+                <Shield size={16} fill="currentColor" />
+            </div>
+        )}
+      </div>
+
+      <div className="px-2">
+        <Button variant="outline" fullWidth className="text-red-500 border-red-100 hover:bg-red-50 h-14" onClick={handleLogout}>
+            <LogOut size={18} className="mr-2" /> Sair da Conta
+        </Button>
+      </div>
       
-      <div className="text-center text-xs text-slate-400">
-        Versão 1.0.0 • Feito com ❤️ para o Brasil
+      <div className="text-center text-[10px] font-bold text-gray-300 uppercase tracking-widest pb-10">
+        AjudaJá App • v2.0.4 • 2024
       </div>
     </div>
   );

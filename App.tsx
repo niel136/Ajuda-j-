@@ -7,19 +7,20 @@ import Home from './pages/Home';
 import Feed from './pages/Feed';
 import CreateRequest from './pages/CreateRequest';
 import Login from './pages/Login';
+import Signup from './pages/Signup';
+import AccountTypeSelection from './pages/AccountTypeSelection';
 import Admin from './pages/Admin';
 import Profile from './pages/Profile';
 import Onboarding from './pages/Onboarding';
 
-// Component to handle initial redirection logic
 const AuthHandler: React.FC = () => {
     const { user } = useApp();
     const navigate = useNavigate();
     const location = useLocation();
 
     useEffect(() => {
-        // If user is not logged in and not on login/onboarding page, redirect
-        if (!user && location.pathname !== '/login' && location.pathname !== '/onboarding') {
+        const publicPaths = ['/login', '/signup', '/onboarding', '/tipo-conta'];
+        if (!user && !publicPaths.includes(location.pathname)) {
             navigate('/onboarding');
         }
     }, [user, navigate, location]);
@@ -40,6 +41,8 @@ const App: React.FC = () => {
               <Route path="/feed" element={<Feed />} />
               <Route path="/novo-pedido" element={<CreateRequest />} />
               <Route path="/login" element={<Login />} />
+              <Route path="/signup" element={<Signup />} />
+              <Route path="/tipo-conta" element={<AccountTypeSelection />} />
               <Route path="/admin" element={<Admin />} />
               <Route path="/impacto" element={<div className="p-6"><h1 className="text-2xl font-bold">Seu Impacto</h1><p className="mt-4 text-gray-500">Gráficos detalhados em breve.</p></div>} />
               <Route path="/perfil" element={<Profile />} />

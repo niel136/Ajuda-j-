@@ -7,40 +7,41 @@ const Onboarding: React.FC = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="h-screen flex flex-col justify-between p-6 bg-[#E2F687] relative overflow-hidden">
-      {/* Background Decorative Elements */}
-      <div className="absolute -top-20 -right-20 w-64 h-64 bg-[#D4F65E] rounded-full blur-3xl opacity-50"></div>
-      <div className="absolute top-40 -left-10 w-40 h-40 bg-white rounded-full blur-2xl opacity-40"></div>
-
-      <div className="mt-12 relative z-10">
-        <div className="w-16 h-16 bg-gray-900 rounded-2xl flex items-center justify-center rotate-3 mb-6 shadow-xl">
-           <HeartHandshake className="text-[#E2F687]" size={32} />
+    <div className="min-h-[100dvh] flex flex-col justify-between p-7 bg-[#E2F687] relative overflow-hidden">
+      {/* Background Decorativo */}
+      <div className="absolute -top-20 -right-20 w-72 h-72 bg-black/5 rounded-full blur-3xl"></div>
+      
+      <div className="mt-10 relative z-10 animate-app-in">
+        <div className="w-16 h-16 bg-black rounded-2xl flex items-center justify-center rotate-3 mb-8 shadow-xl">
+           <HeartHandshake className="text-[#E2F687]" size={34} />
         </div>
-        <h1 className="text-5xl font-extrabold text-gray-900 leading-[0.95] tracking-tight">
+        <h1 className="text-[3.2rem] font-extrabold text-black leading-[0.9] tracking-tighter mb-10">
           Ajuda<br/>
           Rápida &<br/>
           Real.
         </h1>
       </div>
 
-      <div className="relative z-10 w-full mb-8">
-        {/* Illustration Placeholder - Using a CSS shape for now */}
-        <div className="aspect-square bg-gray-900 rounded-[2.5rem] mb-8 relative overflow-hidden flex items-end p-6 shadow-2xl">
+      <div className="relative z-10 w-full flex-1 flex flex-col justify-end">
+        {/* Card Principal de Onboarding */}
+        <div className="aspect-[4/5] bg-black rounded-[3rem] mb-8 relative overflow-hidden flex items-end p-8 shadow-2xl border border-white/10 group animate-app-in" style={{ animationDelay: '0.1s' }}>
             <div className="absolute top-0 right-0 p-8">
-                <div className="w-12 h-12 rounded-full bg-[#E2F687] animate-pulse"></div>
+                <div className="w-14 h-14 rounded-full bg-[#E2F687] shadow-[0_0_30px_rgba(226,246,135,0.4)]"></div>
             </div>
-            <p className="text-white text-lg font-medium leading-relaxed opacity-90">
-              "Conectamos quem precisa de ajuda urgente com quem pode doar, em segundos."
+            <p className="text-white text-xl font-bold leading-snug opacity-95">
+              Conectamos quem precisa de ajuda urgente com quem pode doar em segundos.
             </p>
         </div>
 
-        <div className="space-y-3">
-          <Button fullWidth size="lg" onClick={() => navigate('/login')}>
+        <div className="space-y-4 pb-safe animate-app-in" style={{ animationDelay: '0.2s' }}>
+          <Button fullWidth size="lg" variant="black" onClick={() => navigate('/login')} className="h-16 text-lg">
             Começar Agora
           </Button>
-          <p className="text-center text-xs font-bold text-gray-900 opacity-60">
-            Mais de 1.200 famílias ajudadas este mês.
-          </p>
+          <div className="text-center">
+            <p className="text-[11px] font-black text-black/50 uppercase tracking-[0.2em]">
+              Mais de 1.200 famílias ajudadas este mês
+            </p>
+          </div>
         </div>
       </div>
     </div>

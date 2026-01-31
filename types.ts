@@ -1,4 +1,4 @@
-export type UserRole = 'donor' | 'beneficiary' | 'admin';
+export type UserRole = 'donor' | 'beneficiary' | 'business' | 'admin';
 
 export interface User {
   id: string;
@@ -6,6 +6,15 @@ export interface User {
   email: string;
   role: UserRole;
   avatarUrl?: string;
+  businessName?: string;
+  cnpj?: string;
+  bio?: string;
+  joinedAt: string;
+  stats: {
+    donationsCount: number;
+    totalDonated: number;
+    requestsCreated: number;
+  };
 }
 
 export type RequestCategory = 'Alimentação' | 'Saúde' | 'Reforma' | 'Educação' | 'Outros';
@@ -15,13 +24,13 @@ export type RequestStatus = 'Aberto' | 'Em Andamento' | 'Concluído' | 'Cancelad
 export interface HelpRequest {
   id: string;
   userId: string;
-  userName: string; // Denormalized for simplicity
+  userName: string;
   title: string;
   description: string;
   category: RequestCategory;
   amountNeeded: number;
   amountRaised: number;
-  location: string; // City/Neighborhood
+  location: string;
   urgency: RequestUrgency;
   status: RequestStatus;
   imageUrl: string;

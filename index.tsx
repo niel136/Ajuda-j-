@@ -1,4 +1,3 @@
-
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
@@ -35,9 +34,9 @@ const injectManifest = () => {
 
 injectManifest();
 
-// Progressive Service Worker registration - Safe check for Production
-// Fix: Use process.env instead of import.meta.env to resolve TypeScript error
-const isProd = process.env.NODE_ENV === 'production';
+// Progressive Service Worker registration - Safe check for Production using Vite env
+// Fix: Using type assertion for import.meta to avoid TypeScript environment-specific errors
+const isProd = (import.meta as any).env?.PROD;
 
 if ('serviceWorker' in navigator && isProd) {
   window.addEventListener('load', () => {

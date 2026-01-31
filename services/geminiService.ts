@@ -1,15 +1,13 @@
-
 import { GoogleGenAI } from "@google/genai";
-
-// Always use process.env.API_KEY and named parameter apiKey as per guidelines
-// Fix: Use process.env.API_KEY directly instead of import.meta.env
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 export const enhanceDescription = async (
   rawText: string,
   category: string
 ): Promise<string> => {
   try {
+    // Initialize GoogleGenAI inside the function to use the most current API key from process.env.API_KEY
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    
     const prompt = `
       Você é um assistente social voluntário ajudando pessoas a escreverem pedidos de ajuda claros e dignos.
       Melhore o seguinte texto de um pedido de ajuda na categoria "${category}".
@@ -24,14 +22,12 @@ export const enhanceDescription = async (
       Retorne apenas o texto melhorado.
     `;
 
-    // Always use ai.models.generateContent directly with both model and prompt
-    // gemini-3-flash-preview is suitable for basic text tasks
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: prompt,
     });
 
-    // Directly access the text property from the response object
+    // Access the .text property directly from the response object
     return response.text || rawText;
   } catch (error) {
     console.error("Error enhancing description:", error);

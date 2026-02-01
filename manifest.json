@@ -1,0 +1,26 @@
+{
+  "name": "AjudaJá",
+  "short_name": "AjudaJá",
+  "description": "Conectando doadores a quem precisa com urgência e transparência.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F8FAF5",
+  "theme_color": "#E2F687",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "categories": ["social", "lifestyle"],
+  "screenshots": []
+}

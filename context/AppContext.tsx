@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { HelpRequest, User, UserRole } from '../types';
 import { INITIAL_REQUESTS } from '../constants';
@@ -13,6 +14,8 @@ interface AppContextType {
   logout: () => void;
   addRequest: (request: Omit<HelpRequest, 'id' | 'createdAt' | 'updates' | 'amountRaised' | 'status'>) => void;
   addDonation: (requestId: string, amount: number) => void;
+  // Added approveRequest to the interface
+  approveRequest: (requestId: string) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -101,8 +104,30 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }));
   };
 
+  // Added implementation for approveRequest
+  const approveRequest = (requestId: string) => {
+    setRequests(prev => prev.map(req => {
+      if (req.id === requestId) {
+        return { ...req, status: 'Em Andamento' };
+      }
+      return req;
+    }));
+  };
+
   return (
-    <AppContext.Provider value={{ user, requests, isLoading, login, register, updateUserRole, logout, addRequest, addDonation }}>
+    <AppContext.Provider value={{ 
+      user, 
+      requests, 
+      isLoading, 
+      login, 
+      register, 
+      updateUserRole, 
+      logout, 
+      addRequest, 
+      addDonation,
+      // Added approveRequest to the provider value
+      approveRequest
+    }}>
       {children}
     </AppContext.Provider>
   );

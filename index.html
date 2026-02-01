@@ -4,24 +4,33 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
     <title>AjudaJá</title>
+    
+    <!-- PWA Primary Meta Tags -->
     <meta name="theme-color" content="#E2F687" />
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="AjudaJá">
     
+    <!-- Icons & Manifest -->
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+    <link rel="icon" type="image/png" href="/icons/icon-192.png" />
+
     <script>window.process = { env: { NODE_ENV: 'production' } };</script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
     <style>
       *, *::before, *::after {
-        box-sizing: border-box; /* Fundamental para evitar overflow */
+        box-sizing: border-box;
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
       }
       
       :root {
         --primary: #E2F687;
-        --app-bg: #F8FAF5; /* Fundo levemente mais suave para contraste com cards brancos */
+        --app-bg: #F8FAF5;
       }
 
       body { 
@@ -41,7 +50,6 @@
         overflow-x: hidden;
       }
 
-      /* Utilitários de texto nativo */
       .text-balance { text-wrap: balance; }
       .line-clamp-2 {
         display: -webkit-box;
@@ -50,14 +58,11 @@
         overflow: hidden;
       }
 
-      /* Custom scroll para não poluir visual */
       ::-webkit-scrollbar { display: none; }
 
-      /* Safe Areas */
       .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
       .pt-safe { padding-top: env(safe-area-inset-top); }
 
-      /* Feedback de toque nativo */
       .btn-active:active { transform: scale(0.96); opacity: 0.9; }
       
       @keyframes slideUp {

@@ -1,7 +1,7 @@
 {
   "name": "AjudaJá",
   "short_name": "AjudaJá",
-  "description": "Conectando doadores a quem precisa com urgência e transparência.",
+  "description": "Conectando doadores a quem precisa com urgência.",
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",
@@ -20,7 +20,5 @@
       "type": "image/png",
       "purpose": "any"
     }
-  ],
-  "categories": ["social", "lifestyle"],
-  "screenshots": []
+  ]
 }

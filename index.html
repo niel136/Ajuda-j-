@@ -3,13 +3,8 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-    <title>AjudaJá</title>
-    <meta name="theme-color" content="#E2F687" />
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="manifest" href="manifest.json" />
-    <link rel="apple-touch-icon" href="https://i.postimg.cc/DyndbWTX/20260202-061526.png" />
+    <title>AjudaJá | Conectando Solidariedade</title>
+    <meta name="theme-color" content="#F8FAF5" />
     <link rel="icon" type="image/png" href="https://i.postimg.cc/DyndbWTX/20260202-061526.png" />
     <script>window.process = { env: { NODE_ENV: 'production' } };</script>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -21,23 +16,25 @@
         margin: 0;
         padding: 0;
         overflow-x: hidden;
-        height: 100dvh;
+        -webkit-tap-highlight-color: transparent;
       }
-      #root { min-height: 100dvh; display: flex; flex-direction: column; }
+      #root { min-height: 100vh; display: flex; flex-direction: column; }
       .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
       .pt-safe { padding-top: env(safe-area-inset-top); }
       @keyframes float {
         0%, 100% { transform: translateY(0px); }
-        50% { transform: translateY(-10px); }
+        50% { transform: translateY(-8px); }
       }
       .animate-float { animation: float 3s ease-in-out infinite; }
       .animate-app-in { 
-        animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1);
       }
       @keyframes slideUp {
-        from { transform: translateY(20px); opacity: 0; }
+        from { transform: translateY(15px); opacity: 0; }
         to { transform: translateY(0); opacity: 1; }
       }
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
     <script type="importmap">
 {

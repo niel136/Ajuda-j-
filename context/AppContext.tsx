@@ -1,13 +1,11 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { HelpRequest, User, UserRole } from '../types';
 import { INITIAL_REQUESTS } from '../constants';
-import { useNotification } from './NotificationContext';
 
 interface AppContextType {
   user: User | null;
   requests: HelpRequest[];
   isLoading: boolean;
-  canInstallPWA: boolean;
   login: (email: string) => void;
   register: (name: string, email: string, role: UserRole, phone: string, city: string, extraData?: any) => void;
   updateUserRole: (role: UserRole, businessData?: any) => void;
@@ -23,20 +21,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [user, setUser] = useState<User | null>(null);
   const [requests, setRequests] = useState<HelpRequest[]>(INITIAL_REQUESTS);
   const [isLoading, setIsLoading] = useState(false);
-  const [canInstallPWA, setCanInstallPWA] = useState(false);
 
   useEffect(() => {
     const storedUser = localStorage.getItem('ajudaJa_user');
     if (storedUser) {
       setUser(JSON.parse(storedUser));
     }
-
-    const handlePwaEvent = (e: any) => {
-      setCanInstallPWA(e.detail);
-    };
-
-    window.addEventListener('pwa-installable', handlePwaEvent);
-    return () => window.removeEventListener('pwa-installable', handlePwaEvent);
   }, []);
 
   const login = (email: string) => {
@@ -129,7 +119,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       user, 
       requests, 
       isLoading, 
-      canInstallPWA,
       login, 
       register, 
       updateUserRole, 

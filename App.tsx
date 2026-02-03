@@ -12,7 +12,6 @@ import AccountTypeSelection from './pages/AccountTypeSelection';
 import Admin from './pages/Admin';
 import Profile from './pages/Profile';
 import Onboarding from './pages/Onboarding';
-import InstallBanner from './components/InstallBanner';
 
 const AuthHandler = () => {
   const { user } = useApp();
@@ -35,7 +34,6 @@ const App = () => {
       <AppProvider>
         <Router>
           <AuthHandler />
-          <InstallBanner />
           <Layout>
             <Routes>
               <Route path="/" element={<Home />} />
@@ -46,7 +44,7 @@ const App = () => {
               <Route path="/signup" element={<Signup />} />
               <Route path="/tipo-conta" element={<AccountTypeSelection />} />
               <Route path="/admin" element={<Admin />} />
-              <Route path="/impacto" element={<div className="p-6"><h1 className="text-2xl font-bold">Seu Impacto</h1></div>} />
+              <Route path="/impacto" element={<div className="p-6"><h1 className="text-xl font-bold">Seu Impacto</h1></div>} />
               <Route path="/perfil" element={<Profile />} />
             </Routes>
           </Layout>

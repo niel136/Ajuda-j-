@@ -17,7 +17,7 @@ const Button: React.FC<ButtonProps> = ({
   disabled,
   ...props 
 }) => {
-  const baseStyles = "inline-flex items-center justify-center rounded-2xl font-extrabold transition-all transform active:scale-95 select-none disabled:opacity-30 disabled:grayscale disabled:cursor-not-allowed";
+  const baseStyles = "inline-flex items-center justify-center font-extrabold transition-all transform active:scale-95 select-none disabled:opacity-30 disabled:grayscale disabled:cursor-not-allowed";
   
   const variants = {
     primary: "bg-[#E2F687] text-black shadow-[0_4px_15px_rgba(226,246,135,0.3)]",
@@ -30,8 +30,8 @@ const Button: React.FC<ButtonProps> = ({
 
   const sizes = {
     sm: "px-4 py-2 text-xs h-10 rounded-xl",
-    md: "px-6 py-4 text-sm h-12", 
-    lg: "px-8 py-5 text-base h-14 rounded-3xl",
+    md: "px-6 py-4 text-sm h-12 rounded-2xl", 
+    lg: "px-8 py-5 text-base h-14 rounded-full",
     icon: "p-3 w-12 h-12 rounded-full"
   };
 

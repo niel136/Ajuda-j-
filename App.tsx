@@ -12,28 +12,30 @@ import AccountTypeSelection from './pages/AccountTypeSelection';
 import Admin from './pages/Admin';
 import Profile from './pages/Profile';
 import Onboarding from './pages/Onboarding';
+import InstallBanner from './components/InstallBanner';
 
-const AuthHandler: React.FC = () => {
-    const { user } = useApp();
-    const navigate = useNavigate();
-    const location = useLocation();
+const AuthHandler = () => {
+  const { user } = useApp();
+  const navigate = useNavigate();
+  const location = useLocation();
 
-    useEffect(() => {
-        const publicPaths = ['/login', '/signup', '/onboarding', '/tipo-conta'];
-        if (!user && !publicPaths.includes(location.pathname)) {
-            navigate('/onboarding');
-        }
-    }, [user, navigate, location]);
+  useEffect(() => {
+    const publicPaths = ['/login', '/signup', '/onboarding', '/tipo-conta'];
+    if (!user && !publicPaths.includes(location.pathname)) {
+      navigate('/onboarding');
+    }
+  }, [user, navigate, location]);
 
-    return null;
+  return null;
 };
 
-const App: React.FC = () => {
+const App = () => {
   return (
     <NotificationProvider>
       <AppProvider>
         <Router>
           <AuthHandler />
+          <InstallBanner />
           <Layout>
             <Routes>
               <Route path="/" element={<Home />} />
@@ -44,7 +46,7 @@ const App: React.FC = () => {
               <Route path="/signup" element={<Signup />} />
               <Route path="/tipo-conta" element={<AccountTypeSelection />} />
               <Route path="/admin" element={<Admin />} />
-              <Route path="/impacto" element={<div className="p-6"><h1 className="text-2xl font-bold">Seu Impacto</h1><p className="mt-4 text-gray-500">Gráficos detalhados em breve.</p></div>} />
+              <Route path="/impacto" element={<div className="p-6"><h1 className="text-2xl font-bold">Seu Impacto</h1></div>} />
               <Route path="/perfil" element={<Profile />} />
             </Routes>
           </Layout>

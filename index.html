@@ -65,6 +65,12 @@
 
       .btn-active:active { transform: scale(0.96); opacity: 0.9; }
       
+      @keyframes slideDown {
+        from { transform: translateY(-100%); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+      }
+      .animate-banner { animation: slideDown 0.5s cubic-bezier(0.16, 1, 0.3, 1); }
+      
       @keyframes slideUp {
         from { transform: translateY(20px); opacity: 0; }
         to { transform: translateY(0); opacity: 1; }
@@ -80,7 +86,8 @@
     "react": "https://esm.sh/react@^19.2.4",
     "react-router-dom": "https://esm.sh/react-router-dom@^7.13.0",
     "@google/genai": "https://esm.sh/@google/genai@^1.39.0",
-    "@capacitor/cli": "https://esm.sh/@capacitor/cli@^8.0.2"
+    "@capacitor/core": "https://esm.sh/@capacitor/core@^6.0.0",
+    "@capacitor/cli": "https://esm.sh/@capacitor/cli@^6.0.0"
   }
 }
 </script>

@@ -8,10 +8,10 @@ const Onboarding: React.FC = () => {
 
   return (
     <div className="h-[100dvh] flex flex-col justify-between p-6 bg-[#E2F687] relative overflow-hidden">
-      {/* Elementos decorativos de fundo */}
+      {/* Background Decor */}
       <div className="absolute -top-20 -right-20 w-72 h-72 bg-black/10 rounded-full blur-3xl"></div>
       
-      {/* Topo: Logo e Título */}
+      {/* Top Section */}
       <div className="pt-6 relative z-10 animate-app-in shrink-0">
         <div className="w-14 h-14 bg-black rounded-2xl flex items-center justify-center rotate-3 mb-6 shadow-xl">
            <HeartHandshake className="text-[#E2F687]" size={30} />
@@ -23,9 +23,9 @@ const Onboarding: React.FC = () => {
         </h1>
       </div>
 
-      {/* Meio: Card de Destaque (Flexível) */}
+      {/* Middle Section (Hero Card) - Flexible but with minimum space */}
       <div className="relative z-10 w-full flex-1 flex flex-col justify-center py-4 min-h-0">
-        <div className="w-full h-full max-h-[360px] bg-black rounded-[2.5rem] relative overflow-hidden flex items-end p-7 shadow-2xl border border-white/10 group animate-app-in" style={{ animationDelay: '0.1s' }}>
+        <div className="w-full h-full max-h-[380px] bg-black rounded-[2.5rem] relative overflow-hidden flex items-end p-7 shadow-2xl border border-white/10 animate-app-in" style={{ animationDelay: '0.1s' }}>
             <div className="absolute top-0 right-0 p-6">
                 <div className="w-12 h-12 rounded-full bg-[#E2F687] shadow-[0_0_25px_rgba(226,246,135,0.4)] animate-pulse"></div>
             </div>
@@ -35,8 +35,8 @@ const Onboarding: React.FC = () => {
         </div>
       </div>
 
-      {/* Base: Botão e Info (Fixos na parte inferior) */}
-      <div className="space-y-4 pb-safe animate-app-in shrink-0 mt-2" style={{ animationDelay: '0.2s' }}>
+      {/* Bottom Section - CTA */}
+      <div className="space-y-4 pb-safe animate-app-in shrink-0 mt-4" style={{ animationDelay: '0.2s' }}>
         <Button 
           fullWidth 
           size="lg" 

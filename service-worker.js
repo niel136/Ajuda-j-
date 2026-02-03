@@ -1,6 +1,5 @@
 /* eslint-disable no-restricted-globals */
 
-// Service Worker simplificado para reconhecimento de PWA
 self.addEventListener("install", (event) => {
   self.skipWaiting();
 });
@@ -10,5 +9,5 @@ self.addEventListener("activate", (event) => {
 });
 
 self.addEventListener("fetch", (event) => {
-  // Estratégia básica de fetch (pode ser expandida para offline futuramente)
+  // O evento fetch vazio é o requisito mínimo para o Chrome habilitar a instalação
 });

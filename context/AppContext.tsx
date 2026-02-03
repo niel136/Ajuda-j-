@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { HelpRequest, User, UserRole } from '../types';
 import { INITIAL_REQUESTS } from '../constants';
@@ -8,13 +7,13 @@ interface AppContextType {
   user: User | null;
   requests: HelpRequest[];
   isLoading: boolean;
+  canInstallPWA: boolean;
   login: (email: string) => void;
   register: (name: string, email: string) => void;
   updateUserRole: (role: UserRole, businessData?: { businessName?: string; cnpj?: string }) => void;
   logout: () => void;
   addRequest: (request: Omit<HelpRequest, 'id' | 'createdAt' | 'updates' | 'amountRaised' | 'status'>) => void;
   addDonation: (requestId: string, amount: number) => void;
-  // Added approveRequest to the interface
   approveRequest: (requestId: string) => void;
 }
 
@@ -24,13 +23,21 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [user, setUser] = useState<User | null>(null);
   const [requests, setRequests] = useState<HelpRequest[]>(INITIAL_REQUESTS);
   const [isLoading, setIsLoading] = useState(false);
-  const { sendLocalNotification, preferences } = useNotification();
+  const [canInstallPWA, setCanInstallPWA] = useState(false);
+  const { sendLocalNotification } = useNotification();
 
   useEffect(() => {
     const storedUser = localStorage.getItem('ajudaJa_user');
     if (storedUser) {
       setUser(JSON.parse(storedUser));
     }
+
+    const handlePwaEvent = (e: any) => {
+      setCanInstallPWA(e.detail);
+    };
+
+    window.addEventListener('pwa-installable', handlePwaEvent);
+    return () => window.removeEventListener('pwa-installable', handlePwaEvent);
   }, []);
 
   const login = (email: string) => {
@@ -58,7 +65,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         id: 'u' + Math.random().toString(36).substr(2, 5),
         name,
         email,
-        role: 'donor', // Temporário, será definido no Step seguinte
+        role: 'donor',
         avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${name}`,
         joinedAt: new Date().toISOString(),
         stats: { donationsCount: 0, totalDonated: 0, requestsCreated: 0 }
@@ -104,7 +111,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }));
   };
 
-  // Added implementation for approveRequest
   const approveRequest = (requestId: string) => {
     setRequests(prev => prev.map(req => {
       if (req.id === requestId) {
@@ -119,13 +125,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       user, 
       requests, 
       isLoading, 
+      canInstallPWA,
       login, 
       register, 
       updateUserRole, 
       logout, 
       addRequest, 
       addDonation,
-      // Added approveRequest to the provider value
       approveRequest
     }}>
       {children}

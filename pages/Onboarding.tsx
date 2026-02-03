@@ -1,16 +1,10 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import Button from '../components/Button';
-import { HeartHandshake, Smartphone, Download } from 'lucide-react';
-import { useApp } from '../context/AppContext';
-import { installPWA } from '../index';
+import { HeartHandshake } from 'lucide-react';
 
 const Onboarding: React.FC = () => {
   const navigate = useNavigate();
-  const { canInstallPWA } = useApp();
-
-  // Verifica se o app já está rodando em modo standalone (instalado)
-  const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
 
   return (
     <div className="h-[100dvh] w-full flex flex-col justify-between p-6 bg-[#E2F687] relative overflow-hidden">
@@ -43,31 +37,6 @@ const Onboarding: React.FC = () => {
 
       {/* Bottom Section */}
       <div className="space-y-4 pb-safe animate-app-in shrink-0 mt-4" style={{ animationDelay: '0.2s' }}>
-        
-        {/* Dica discreta de instalação e botão (apenas se for possível instalar) */}
-        {!isStandalone && (
-          <div className="space-y-3">
-             {canInstallPWA && (
-               <Button 
-                variant="black" 
-                fullWidth 
-                size="md" 
-                onClick={installPWA}
-                className="bg-white text-black h-14 border border-black/10 shadow-none"
-               >
-                 <Download size={18} className="mr-2" /> Instalar AjudaJá
-               </Button>
-             )}
-             
-             <div className="bg-white/20 backdrop-blur-md rounded-2xl p-3 flex items-center gap-3 border border-black/5">
-                <Smartphone size={18} className="text-black" />
-                <p className="text-[11px] font-bold text-black leading-tight">
-                  Adicione o AjudaJá à tela inicial e use como um aplicativo real.
-                </p>
-             </div>
-          </div>
-        )}
-
         <Button 
           fullWidth 
           size="lg" 

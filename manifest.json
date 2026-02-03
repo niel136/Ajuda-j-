@@ -1,21 +1,22 @@
 {
   "name": "AjudaJá",
   "short_name": "AjudaJá",
-  "description": "Conectando doadores a quem precisa com urgência.",
+  "description": "Ajuda rápida e real para quem precisa e para quem quer ajudar.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#F8FAF5",
-  "theme_color": "#E2F687",
+  "theme_color": "#000000",
   "icons": [
     {
-      "src": "/icons/icon-192.png",
+      "src": "/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/icons/icon-512.png",
+      "src": "/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"

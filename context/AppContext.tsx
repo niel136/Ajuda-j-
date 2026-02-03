@@ -9,8 +9,8 @@ interface AppContextType {
   isLoading: boolean;
   canInstallPWA: boolean;
   login: (email: string) => void;
-  register: (name: string, email: string) => void;
-  updateUserRole: (role: UserRole, businessData?: { businessName?: string; cnpj?: string }) => void;
+  register: (name: string, email: string, role: UserRole, phone: string, city: string, extraData?: any) => void;
+  updateUserRole: (role: UserRole, businessData?: any) => void;
   logout: () => void;
   addRequest: (request: Omit<HelpRequest, 'id' | 'createdAt' | 'updates' | 'amountRaised' | 'status'>) => void;
   addDonation: (requestId: string, amount: number) => void;
@@ -24,7 +24,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [requests, setRequests] = useState<HelpRequest[]>(INITIAL_REQUESTS);
   const [isLoading, setIsLoading] = useState(false);
   const [canInstallPWA, setCanInstallPWA] = useState(false);
-  const { sendLocalNotification } = useNotification();
 
   useEffect(() => {
     const storedUser = localStorage.getItem('ajudaJa_user');
@@ -47,6 +46,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         id: 'u' + Math.random().toString(36).substr(2, 5),
         name: email.split('@')[0],
         email: email,
+        phone: '11999999999',
+        city: 'São Paulo, SP',
         role: 'donor',
         avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}`,
         joinedAt: new Date().toISOString(),
@@ -58,25 +59,28 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }, 800);
   };
 
-  const register = (name: string, email: string) => {
+  const register = (name: string, email: string, role: UserRole, phone: string, city: string, extraData?: any) => {
     setIsLoading(true);
     setTimeout(() => {
       const newUser: User = {
         id: 'u' + Math.random().toString(36).substr(2, 5),
         name,
         email,
-        role: 'donor',
+        phone,
+        city,
+        role,
         avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${name}`,
         joinedAt: new Date().toISOString(),
-        stats: { donationsCount: 0, totalDonated: 0, requestsCreated: 0 }
+        stats: { donationsCount: 0, totalDonated: 0, requestsCreated: 0 },
+        ...extraData
       };
       setUser(newUser);
       localStorage.setItem('ajudaJa_user', JSON.stringify(newUser));
       setIsLoading(false);
-    }, 800);
+    }, 1000);
   };
 
-  const updateUserRole = (role: UserRole, businessData?: { businessName?: string; cnpj?: string }) => {
+  const updateUserRole = (role: UserRole, businessData?: any) => {
     if (!user) return;
     const updatedUser = { ...user, role, ...businessData };
     setUser(updatedUser);

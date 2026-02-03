@@ -1,11 +1,13 @@
 
 import { HelpRequest, User } from './types';
 
-// Fix: Added missing properties 'joinedAt' and 'stats' required by the User interface defined in types.ts
+// Fix: Added missing properties 'phone' and 'city' required by the User interface defined in types.ts
 export const MOCK_USER: User = {
   id: 'u1',
   name: 'Maria Silva',
   email: 'maria@exemplo.com',
+  phone: '11988887777',
+  city: 'São Paulo, SP',
   role: 'donor', // Default role for demo
   avatarUrl: 'https://picsum.photos/100/100',
   joinedAt: new Date('2024-01-01').toISOString(),

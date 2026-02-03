@@ -4,11 +4,15 @@ export interface User {
   id: string;
   name: string;
   email: string;
+  phone: string;
+  city: string;
   role: UserRole;
   avatarUrl?: string;
+  // Campos para empresa
   businessName?: string;
   cnpj?: string;
-  bio?: string;
+  areaOfExpertise?: string;
+  responsibleContact?: string;
   joinedAt: string;
   stats: {
     donationsCount: number;

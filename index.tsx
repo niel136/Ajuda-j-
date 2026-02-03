@@ -2,16 +2,21 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 
-// Registro do Service Worker para PWA com caminho relativo para evitar erro de Cross-Origin
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", async () => {
-    try {
-      // Usando caminho relativo 'service-worker.js' em vez de '/service-worker.js'
-      const reg = await navigator.serviceWorker.register("service-worker.js", { scope: './' });
-      console.log("SW registrado com sucesso no escopo:", reg.scope);
-    } catch (e) {
-      console.error("Erro crítico ao registrar Service Worker:", e);
-    }
+// Registro resiliente do Service Worker para PWA
+// Em ambientes de desenvolvimento/preview, o Service Worker pode falhar silenciosamente sem quebrar o app
+if ("serviceWorker" in navigator && window.location.protocol === 'https:') {
+  window.addEventListener("load", () => {
+    // Usamos um caminho relativo simples. O navegador resolve contra a base do documento.
+    navigator.serviceWorker.register("service-worker.js", { scope: './' })
+      .then(reg => {
+        console.log("PWA: Service Worker registrado com sucesso no escopo:", reg.scope);
+      })
+      .catch(err => {
+        // Ignoramos erros de 'Invalid State' que ocorrem comumente em previews de browsers
+        if (err.name !== 'InvalidStateError') {
+          console.warn("PWA: Falha ao registrar Service Worker (esperado em alguns ambientes):", err.message);
+        }
+      });
   });
 }
 

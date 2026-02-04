@@ -14,16 +14,17 @@ import Profile from './pages/Profile';
 import Onboarding from './pages/Onboarding';
 
 const AuthHandler = () => {
-  const { user } = useApp();
+  const { user, isLoading } = useApp();
   const navigate = useNavigate();
   const location = useLocation();
 
   useEffect(() => {
+    if (isLoading) return;
     const publicPaths = ['/login', '/signup', '/onboarding', '/tipo-conta'];
     if (!user && !publicPaths.includes(location.pathname)) {
       navigate('/onboarding');
     }
-  }, [user, navigate, location]);
+  }, [user, navigate, location, isLoading]);
 
   return null;
 };
@@ -44,7 +45,7 @@ const App = () => {
               <Route path="/signup" element={<Signup />} />
               <Route path="/tipo-conta" element={<AccountTypeSelection />} />
               <Route path="/admin" element={<Admin />} />
-              <Route path="/impacto" element={<div className="p-6"><h1 className="text-xl font-bold">Seu Impacto</h1></div>} />
+              <Route path="/impacto" element={<div className="p-8"><h1 className="text-2xl font-black">Seu Impacto</h1><p className="text-gray-400 font-bold mt-2 text-sm uppercase">Em construção...</p></div>} />
               <Route path="/perfil" element={<Profile />} />
             </Routes>
           </Layout>

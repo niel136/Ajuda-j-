@@ -1,131 +1,151 @@
+
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
-import { HelpRequest, User, UserRole } from '../types';
-import { INITIAL_REQUESTS } from '../constants';
+import { supabase } from '../lib/supabase';
 
 interface AppContextType {
-  user: User | null;
-  requests: HelpRequest[];
+  user: any | null;
+  profile: any | null;
+  requests: any[];
   isLoading: boolean;
-  login: (email: string) => void;
-  register: (name: string, email: string, role: UserRole, phone: string, city: string, extraData?: any) => void;
-  updateUserRole: (role: UserRole, businessData?: any) => void;
-  logout: () => void;
-  addRequest: (request: Omit<HelpRequest, 'id' | 'createdAt' | 'updates' | 'amountRaised' | 'status'>) => void;
-  addDonation: (requestId: string, amount: number) => void;
-  approveRequest: (requestId: string) => void;
+  login: (email: string, pass: string) => Promise<void>;
+  register: (email: string, pass: string, name: string, role: string) => Promise<void>;
+  logout: () => Promise<void>;
+  addRequest: (request: any) => Promise<void>;
+  // Fix: Added missing properties to the context type definition
+  approveRequest: (id: string) => Promise<void>;
+  updateUserRole: (role: string) => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [requests, setRequests] = useState<HelpRequest[]>(INITIAL_REQUESTS);
-  const [isLoading, setIsLoading] = useState(false);
+  const [user, setUser] = useState<any | null>(null);
+  const [profile, setProfile] = useState<any | null>(null);
+  const [requests, setRequests] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
+  // Busca dados iniciais e configura Auth
   useEffect(() => {
-    const storedUser = localStorage.getItem('ajudaJa_user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      if (session?.user) fetchProfile(session.user.id);
+      setIsLoading(false);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+      if (session?.user) fetchProfile(session.user.id);
+      else setProfile(null);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  const login = (email: string) => {
-    setIsLoading(true);
-    setTimeout(() => {
-      const newUser: User = {
-        id: 'u' + Math.random().toString(36).substr(2, 5),
-        name: email.split('@')[0],
-        email: email,
-        phone: '11999999999',
-        city: 'São Paulo, SP',
-        role: 'donor',
-        avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}`,
-        joinedAt: new Date().toISOString(),
-        stats: { donationsCount: 5, totalDonated: 1250, requestsCreated: 0 }
-      };
-      setUser(newUser);
-      localStorage.setItem('ajudaJa_user', JSON.stringify(newUser));
-      setIsLoading(false);
-    }, 800);
+  const fetchProfile = async (id: string) => {
+    const { data } = await supabase.from('profiles').select('*').eq('id', id).single();
+    if (data) setProfile(data);
   };
 
-  const register = (name: string, email: string, role: UserRole, phone: string, city: string, extraData?: any) => {
-    setIsLoading(true);
-    setTimeout(() => {
-      const newUser: User = {
-        id: 'u' + Math.random().toString(36).substr(2, 5),
-        name,
-        email,
-        phone,
-        city,
-        role,
-        avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${name}`,
-        joinedAt: new Date().toISOString(),
-        stats: { donationsCount: 0, totalDonated: 0, requestsCreated: 0 },
-        ...extraData
-      };
-      setUser(newUser);
-      localStorage.setItem('ajudaJa_user', JSON.stringify(newUser));
-      setIsLoading(false);
-    }, 1000);
+  const fetchRequests = async () => {
+    const { data, error } = await supabase
+      .from('pedidos_ajuda')
+      .select(`*, profiles(nome, avatar_url)`)
+      .order('created_at', { ascending: false });
+    
+    if (!error) setRequests(data || []);
   };
 
-  const updateUserRole = (role: UserRole, businessData?: any) => {
-    if (!user) return;
-    const updatedUser = { ...user, role, ...businessData };
-    setUser(updatedUser);
-    localStorage.setItem('ajudaJa_user', JSON.stringify(updatedUser));
-  };
+  // Configuração do SUPABASE REALTIME
+  useEffect(() => {
+    fetchRequests();
 
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('ajudaJa_user');
-  };
+    // Inscreve no canal de mudanças da tabela pedidos_ajuda
+    const channel = supabase
+      .channel('schema-db-changes')
+      .on(
+        'postgres_changes', 
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'pedidos_ajuda' 
+        }, 
+        (payload) => {
+          console.log('Nova atualização em tempo real recebida!', payload);
+          // Recarregamos a lista para trazer os dados com o join do profile (nome do autor)
+          fetchRequests();
+        }
+      )
+      .subscribe();
 
-  const addRequest = (newRequestData: any) => {
-    const newRequest: HelpRequest = {
-      ...newRequestData,
-      id: Math.random().toString(36).substr(2, 9),
-      createdAt: new Date().toISOString(),
-      amountRaised: 0,
-      status: 'Aberto', 
-      updates: []
+    return () => {
+      supabase.removeChannel(channel);
     };
-    setRequests(prev => [newRequest, ...prev]);
+  }, []);
+
+  const login = async (email: string, pass: string) => {
+    const { error } = await supabase.auth.signInWithPassword({ email, password: pass });
+    if (error) throw error;
   };
 
-  const addDonation = (requestId: string, amount: number) => {
-    setRequests(prev => prev.map(req => {
-      if (req.id === requestId) {
-        const newRaised = req.amountRaised + amount;
-        const newStatus = newRaised >= req.amountNeeded ? 'Concluído' : req.status;
-        return { ...req, amountRaised: newRaised, status: newStatus };
-      }
-      return req;
-    }));
+  const register = async (email: string, pass: string, name: string, role: string) => {
+    const { data, error } = await supabase.auth.signUp({ email, password: pass });
+    if (error) throw error;
+    
+    if (data.user) {
+      const { error: profileError } = await supabase.from('profiles').insert([{
+        id: data.user.id,
+        nome: name,
+        tipo_conta: role,
+        quer: role === 'donor' ? 'ajudar' : 'pedir_ajuda'
+      }]);
+      if (profileError) console.error("Erro ao criar perfil:", profileError);
+    }
   };
 
-  const approveRequest = (requestId: string) => {
-    setRequests(prev => prev.map(req => {
-      if (req.id === requestId) {
-        return { ...req, status: 'Em Andamento' };
-      }
-      return req;
-    }));
+  const logout = async () => {
+    await supabase.auth.signOut();
+  };
+
+  const addRequest = async (requestData: any) => {
+    if (!user) return;
+    const { error } = await supabase.from('pedidos_ajuda').insert([{
+      user_id: user.id,
+      titulo: requestData.title,
+      descricao: requestData.description,
+      categoria: requestData.category,
+      valor_meta: requestData.amountNeeded,
+      pix_key: requestData.pixKey,
+      status: 'Aberto'
+    }]);
+    if (error) throw error;
+  };
+
+  // Fix: Implemented approveRequest to allow admins to validate help requests
+  const approveRequest = async (id: string) => {
+    const { error } = await supabase
+      .from('pedidos_ajuda')
+      .update({ status: 'Em Andamento' })
+      .eq('id', id);
+    if (error) throw error;
+    // UI will update automatically via Realtime Postgres changes
+  };
+
+  // Fix: Implemented updateUserRole to update the profile type in the database
+  const updateUserRole = async (role: string) => {
+    if (user) {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ tipo_conta: role })
+        .eq('id', user.id);
+      if (error) throw error;
+      await fetchProfile(user.id);
+    }
   };
 
   return (
     <AppContext.Provider value={{ 
-      user, 
-      requests, 
-      isLoading, 
-      login, 
-      register, 
-      updateUserRole, 
-      logout, 
-      addRequest, 
-      addDonation,
-      approveRequest
+      user, profile, requests, isLoading, login, register, logout, addRequest,
+      approveRequest, updateUserRole
     }}>
       {children}
     </AppContext.Provider>

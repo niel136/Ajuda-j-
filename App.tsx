@@ -1,6 +1,13 @@
 
-import React from 'react';
-import { HashRouter as Router, Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
+import React, { useEffect } from 'react';
+// Corrected imports for react-router-dom v6
+import { 
+  HashRouter as Router, 
+  Routes, 
+  Route, 
+  useLocation, 
+  Navigate 
+} from 'react-router-dom';
 import { AppProvider, useApp } from './context/AppContext';
 import { NotificationProvider } from './context/NotificationContext';
 import Layout from './components/Layout';
@@ -16,13 +23,14 @@ import Profile from './pages/Profile';
 import Onboarding from './pages/Onboarding';
 
 // Componente Wrapper para Rotas Protegidas
-// Fix: Explicitly define ProtectedRoute with children type to satisfy React 18 / TypeScript requirements
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, isLoading } = useApp();
+  const { user, isLoading, authChecked } = useApp();
   const location = useLocation();
 
-  if (isLoading) return <LoadingScreen />;
+  // Enquanto estiver checando a autenticação inicial, mostra loading
+  if (!authChecked || isLoading) return <LoadingScreen />;
   
+  // Se terminou de checar e não tem usuário, manda pro onboarding
   if (!user) {
     return <Navigate to="/onboarding" state={{ from: location }} replace />;
   }
@@ -30,21 +38,35 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
   return <>{children}</>;
 };
 
-const AppContent = () => {
-  const { isLoading } = useApp();
+// Componente para evitar que usuários logados acessem telas de login/onboarding
+const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user, authChecked, isLoading } = useApp();
+  
+  if (!authChecked || isLoading) return <LoadingScreen />;
+  
+  if (user) {
+    return <Navigate to="/" replace />;
+  }
+  
+  return <>{children}</>;
+};
 
-  if (isLoading) return <LoadingScreen />;
+const AppContent = () => {
+  const { authChecked, isLoading } = useApp();
+
+  // O AppContent só renderiza as rotas após a PRIMEIRA checagem de auth
+  if (!authChecked && isLoading) return <LoadingScreen />;
 
   return (
     <Layout>
       <Routes>
-        {/* Rotas Públicas */}
-        <Route path="/onboarding" element={<Onboarding />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
-        <Route path="/tipo-conta" element={<AccountTypeSelection />} />
+        {/* Rotas Públicas com Proteção contra usuários logados */}
+        <Route path="/onboarding" element={<PublicRoute><Onboarding /></PublicRoute>} />
+        <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
+        <Route path="/signup" element={<PublicRoute><Signup /></PublicRoute>} />
+        <Route path="/tipo-conta" element={<PublicRoute><AccountTypeSelection /></PublicRoute>} />
 
-        {/* Rotas Privadas */}
+        {/* Rotas Privadas com Redirecionamento replace() */}
         <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
         <Route path="/feed" element={<ProtectedRoute><Feed /></ProtectedRoute>} />
         <Route path="/novo-pedido" element={<ProtectedRoute><CreateRequest /></ProtectedRoute>} />
@@ -54,12 +76,11 @@ const AppContent = () => {
           <ProtectedRoute>
             <div className="p-8">
               <h1 className="text-2xl font-black">Seu Impacto</h1>
-              <p className="text-gray-400 font-bold mt-2 text-sm uppercase">Em construção...</p>
+              <p className="text-gray-400 font-bold mt-2 text-sm uppercase">Em desenvolvimento</p>
             </div>
           </ProtectedRoute>
         } />
         
-        {/* Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Layout>

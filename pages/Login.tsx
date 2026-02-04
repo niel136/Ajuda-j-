@@ -1,4 +1,6 @@
+
 import React, { useState } from 'react';
+// Corrected imports for react-router-dom v6
 import { useNavigate, Link } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import Button from '../components/Button';
@@ -16,24 +18,32 @@ const Login: React.FC = () => {
     setError('');
     try {
       await login(email, password);
-      navigate('/');
+      // Redirecionamento seguro para a home substituindo o histórico
+      navigate('/', { replace: true });
     } catch (err: any) {
       setError(err.message || 'Erro ao entrar. Verifique seus dados.');
     }
   };
 
   return (
-    <div className="min-h-[100dvh] bg-[#F8FAF5] p-8 flex flex-col pt-safe">
+    <div className="min-h-[100dvh] bg-[#F8FAF5] p-8 flex flex-col pt-safe animate-app-in">
       <header className="mb-10">
-        <button onClick={() => navigate('/onboarding')} className="w-14 h-14 flex items-center justify-center bg-white rounded-2xl shadow-sm mb-10 border border-black/5">
+        <button 
+          onClick={() => navigate('/onboarding', { replace: true })} 
+          className="w-14 h-14 flex items-center justify-center bg-white rounded-2xl shadow-sm mb-10 border border-black/5 active:scale-90 transition-transform"
+        >
             <ArrowLeft size={28} />
         </button>
-        <h2 className="text-4xl font-extrabold text-black tracking-tighter leading-none">Entrar no<br/>AjudaJá</h2>
-        <p className="text-gray-400 font-bold mt-3 text-sm uppercase tracking-widest">Acesse sua conta</p>
+        <h2 className="text-4xl font-extrabold text-black tracking-tighter leading-none">Bem-vindo<br/>de volta</h2>
+        <p className="text-gray-400 font-bold mt-3 text-sm uppercase tracking-widest">Acesse sua conta AjudaJá</p>
       </header>
 
-      <form onSubmit={handleLogin} className="space-y-6 flex-1 animate-app-in">
-        {error && <div className="p-4 bg-red-50 text-red-500 rounded-2xl text-xs font-bold">{error}</div>}
+      <form onSubmit={handleLogin} className="space-y-6 flex-1">
+        {error && (
+          <div className="p-4 bg-red-50 text-red-600 rounded-2xl text-xs font-bold border border-red-100 animate-pulse">
+            {error}
+          </div>
+        )}
         
         <div className="space-y-2">
            <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest ml-1">E-mail</label>
@@ -67,13 +77,13 @@ const Login: React.FC = () => {
 
         <div className="pt-6">
             <Button fullWidth size="lg" type="submit" isLoading={isLoading} variant="black">
-                Entrar Agora
+                Entrar
             </Button>
         </div>
 
         <div className="text-center pt-4">
             <p className="text-gray-400 font-bold text-sm">
-                Novo por aqui? <Link to="/tipo-conta" className="text-black underline decoration-2">Criar conta</Link>
+                Ainda não tem conta? <Link to="/tipo-conta" className="text-black underline decoration-2">Cadastre-se</Link>
             </p>
         </div>
       </form>

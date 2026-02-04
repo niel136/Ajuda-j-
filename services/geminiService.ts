@@ -1,3 +1,4 @@
+
 import { GoogleGenAI } from "@google/genai";
 
 export const enhanceDescription = async (
@@ -5,7 +6,7 @@ export const enhanceDescription = async (
   category: string
 ): Promise<string> => {
   try {
-    // Inicialização conforme diretrizes: named parameter e process.env.API_KEY
+    // Initializing with named parameter and process.env.API_KEY
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     
     const prompt = `
@@ -22,12 +23,13 @@ export const enhanceDescription = async (
       Retorne apenas o texto melhorado.
     `;
 
+    // Using gemini-3-flash-preview for proofreading/text enhancement task
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
-      contents: prompt,
+      contents: [{ parts: [{ text: prompt }] }],
     });
 
-    // Acesso direto à propriedade .text conforme especificação
+    // Directly access the .text property
     return response.text || rawText;
   } catch (error) {
     console.error("Error enhancing description:", error);

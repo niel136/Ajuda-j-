@@ -1,8 +1,10 @@
+
 import React from 'react';
 import { useApp } from '../context/AppContext';
 import { useNotification } from '../context/NotificationContext';
 import Button from '../components/Button';
 import { Bell, Shield, LogOut, ChevronRight, Settings, History, Heart, CreditCard, Share2 } from 'lucide-react';
+// Corrected import for useNavigate
 import { useNavigate } from 'react-router-dom';
 
 const Profile: React.FC = () => {

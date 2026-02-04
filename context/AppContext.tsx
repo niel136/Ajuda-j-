@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 
 interface AppContextType {
@@ -7,12 +7,14 @@ interface AppContextType {
   profile: any | null;
   requests: any[];
   isLoading: boolean;
+  authChecked: boolean; // Novo estado para garantir que a primeira checagem terminou
   login: (email: string, pass: string) => Promise<void>;
   register: (email: string, pass: string, name: string, role: string) => Promise<void>;
   logout: () => Promise<void>;
   addRequest: (request: any) => Promise<void>;
   approveRequest: (id: string) => Promise<void>;
   updateUserRole: (role: string) => Promise<void>;
+  refreshProfile: () => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -22,29 +24,76 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [profile, setProfile] = useState<any | null>(null);
   const [requests, setRequests] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [authChecked, setAuthChecked] = useState(false);
 
-  const fetchProfile = async (id: string) => {
+  const fetchProfile = useCallback(async (userId: string) => {
     try {
-      const { data } = await supabase.from('profiles').select('*').eq('id', id).single();
-      if (data) setProfile(data);
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+      
+      if (error) throw error;
+      setProfile(data);
     } catch (e) {
-      console.error("Erro ao carregar perfil", e);
+      console.warn("Perfil não encontrado ou erro na busca:", e);
+      // Não travamos o app se o perfil falhar, apenas mantemos o perfil nulo
+      setProfile(null);
     }
+  }, []);
+
+  const refreshProfile = async () => {
+    if (user?.id) await fetchProfile(user.id);
   };
 
-  const fetchRequests = async () => {
-    const { data, error } = await supabase
-      .from('pedidos_ajuda')
-      .select(`*, profiles(nome, avatar_url)`)
-      .order('created_at', { ascending: false });
-    
-    if (!error) setRequests(data || []);
-  };
+  const fetchRequests = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('pedidos_ajuda')
+        .select(`*, profiles(nome, avatar_url)`)
+        .order('created_at', { ascending: false });
+      
+      if (!error) setRequests(data || []);
+    } catch (e) {
+      console.error("Erro ao buscar pedidos:", e);
+    }
+  }, []);
 
   useEffect(() => {
-    // Escuta mudanças na sessão e sincroniza estados
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setIsLoading(true);
+    // 1. SAFETY TIMEOUT: Se em 3.5 segundos nada carregar, forçamos o encerramento do loading
+    // Isso evita que o usuário fique preso na tela branca por falhas de rede/API
+    const timer = setTimeout(() => {
+      if (isLoading) {
+        console.log("Safety timeout disparado: forçando fim do loading.");
+        setIsLoading(false);
+        setAuthChecked(true);
+      }
+    }, 3500);
+
+    // 2. Checagem inicial da sessão
+    const initAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          setUser(session.user);
+          await fetchProfile(session.user.id);
+        }
+      } catch (e) {
+        console.error("Erro na checagem inicial de auth:", e);
+      } finally {
+        setIsLoading(false);
+        setAuthChecked(true);
+        clearTimeout(timer);
+      }
+    };
+
+    initAuth();
+
+    // 3. Listener de mudanças de estado (Login/Logout/Token Refresh)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log("Evento Auth:", event);
+      
       if (session?.user) {
         setUser(session.user);
         await fetchProfile(session.user.id);
@@ -52,37 +101,55 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setUser(null);
         setProfile(null);
       }
+      
       setIsLoading(false);
+      setAuthChecked(true);
     });
 
-    // Carga inicial de requests
     fetchRequests();
 
-    return () => subscription.unsubscribe();
-  }, []);
+    return () => {
+      subscription.unsubscribe();
+      clearTimeout(timer);
+    };
+  }, [fetchProfile, fetchRequests]);
 
   const login = async (email: string, pass: string) => {
+    setIsLoading(true);
     const { error } = await supabase.auth.signInWithPassword({ email, password: pass });
-    if (error) throw error;
+    if (error) {
+      setIsLoading(false);
+      throw error;
+    }
   };
 
   const register = async (email: string, pass: string, name: string, role: string) => {
-    const { data, error } = await supabase.auth.signUp({ email, password: pass });
-    if (error) throw error;
-    
-    if (data.user) {
-      const { error: profileError } = await supabase.from('profiles').insert([{
-        id: data.user.id,
-        nome: name,
-        tipo_conta: role,
-        quer: role === 'donor' ? 'ajudar' : 'pedir_ajuda'
-      }]);
-      if (profileError) throw profileError;
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase.auth.signUp({ email, password: pass });
+      if (error) throw error;
+      
+      if (data.user) {
+        const { error: profileError } = await supabase.from('profiles').insert([{
+          id: data.user.id,
+          nome: name,
+          tipo_conta: role,
+          quer: role === 'donor' ? 'ajudar' : 'pedir_ajuda'
+        }]);
+        if (profileError) console.error("Erro ao criar perfil no signup:", profileError);
+      }
+    } catch (e) {
+      setIsLoading(false);
+      throw e;
     }
   };
 
   const logout = async () => {
+    setIsLoading(true);
     await supabase.auth.signOut();
+    setUser(null);
+    setProfile(null);
+    setIsLoading(false);
   };
 
   const addRequest = async (requestData: any) => {
@@ -97,6 +164,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       status: 'Aberto'
     }]);
     if (error) throw error;
+    await fetchRequests();
   };
 
   const approveRequest = async (id: string) => {
@@ -105,6 +173,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       .update({ status: 'Em Andamento' })
       .eq('id', id);
     if (error) throw error;
+    await fetchRequests();
   };
 
   const updateUserRole = async (role: string) => {
@@ -120,8 +189,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   return (
     <AppContext.Provider value={{ 
-      user, profile, requests, isLoading, login, register, logout, addRequest,
-      approveRequest, updateUserRole
+      user, profile, requests, isLoading, authChecked, login, register, logout, addRequest,
+      approveRequest, updateUserRole, refreshProfile
     }}>
       {children}
     </AppContext.Provider>

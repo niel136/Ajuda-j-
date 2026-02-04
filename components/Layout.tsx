@@ -1,4 +1,6 @@
+
 import React from 'react';
+// Corrected imports for react-router-dom v6
 import { Link, useLocation } from 'react-router-dom';
 import { Home, Grid, Plus, User, Heart } from 'lucide-react';
 import { useApp } from '../context/AppContext';

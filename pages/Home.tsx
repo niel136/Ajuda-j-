@@ -1,5 +1,6 @@
 
 import React from 'react';
+// Corrected import for Link
 import { Link } from 'react-router-dom';
 import { ArrowUpRight, Heart, PlusCircle, Settings, TrendingUp } from 'lucide-react';
 import { useApp } from '../context/AppContext';

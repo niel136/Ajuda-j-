@@ -11,7 +11,6 @@ interface AppContextType {
   register: (email: string, pass: string, name: string, role: string) => Promise<void>;
   logout: () => Promise<void>;
   addRequest: (request: any) => Promise<void>;
-  // Fix: Added missing properties to the context type definition
   approveRequest: (id: string) => Promise<void>;
   updateUserRole: (role: string) => Promise<void>;
 }
@@ -24,26 +23,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [requests, setRequests] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Busca dados iniciais e configura Auth
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      if (session?.user) fetchProfile(session.user.id);
-      setIsLoading(false);
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-      if (session?.user) fetchProfile(session.user.id);
-      else setProfile(null);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
   const fetchProfile = async (id: string) => {
-    const { data } = await supabase.from('profiles').select('*').eq('id', id).single();
-    if (data) setProfile(data);
+    try {
+      const { data } = await supabase.from('profiles').select('*').eq('id', id).single();
+      if (data) setProfile(data);
+    } catch (e) {
+      console.error("Erro ao carregar perfil", e);
+    }
   };
 
   const fetchRequests = async () => {
@@ -55,31 +41,24 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     if (!error) setRequests(data || []);
   };
 
-  // Configuração do SUPABASE REALTIME
   useEffect(() => {
+    // Escuta mudanças na sessão e sincroniza estados
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      setIsLoading(true);
+      if (session?.user) {
+        setUser(session.user);
+        await fetchProfile(session.user.id);
+      } else {
+        setUser(null);
+        setProfile(null);
+      }
+      setIsLoading(false);
+    });
+
+    // Carga inicial de requests
     fetchRequests();
 
-    // Inscreve no canal de mudanças da tabela pedidos_ajuda
-    const channel = supabase
-      .channel('schema-db-changes')
-      .on(
-        'postgres_changes', 
-        { 
-          event: '*', 
-          schema: 'public', 
-          table: 'pedidos_ajuda' 
-        }, 
-        (payload) => {
-          console.log('Nova atualização em tempo real recebida!', payload);
-          // Recarregamos a lista para trazer os dados com o join do profile (nome do autor)
-          fetchRequests();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => subscription.unsubscribe();
   }, []);
 
   const login = async (email: string, pass: string) => {
@@ -98,7 +77,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         tipo_conta: role,
         quer: role === 'donor' ? 'ajudar' : 'pedir_ajuda'
       }]);
-      if (profileError) console.error("Erro ao criar perfil:", profileError);
+      if (profileError) throw profileError;
     }
   };
 
@@ -120,17 +99,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     if (error) throw error;
   };
 
-  // Fix: Implemented approveRequest to allow admins to validate help requests
   const approveRequest = async (id: string) => {
     const { error } = await supabase
       .from('pedidos_ajuda')
       .update({ status: 'Em Andamento' })
       .eq('id', id);
     if (error) throw error;
-    // UI will update automatically via Realtime Postgres changes
   };
 
-  // Fix: Implemented updateUserRole to update the profile type in the database
   const updateUserRole = async (role: string) => {
     if (user) {
       const { error } = await supabase

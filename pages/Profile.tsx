@@ -5,18 +5,17 @@ import { useNotification } from '../context/NotificationContext';
 import Button from '../components/Button';
 import MascotAvatar from '../components/MascotAvatar';
 import { 
-  Bell, Shield, LogOut, ChevronRight, RefreshCw, 
+  Bell, Shield, LogOut, ChevronRight, Settings, 
   History, Heart, CreditCard, Share2
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 
 const Profile: React.FC = () => {
-  const { user, profile, logout, refreshProfile, updateAvatarSeed } = useApp();
+  const { user, profile, logout, refreshProfile } = useApp();
   const { permission, requestPermission } = useNotification();
   const navigate = useNavigate();
   const [isInitializing, setIsInitializing] = useState(false);
-  const [isChangingAvatar, setIsChangingAvatar] = useState(false);
 
   useEffect(() => {
     const checkAndCreateProfile = async () => {
@@ -57,18 +56,6 @@ const Profile: React.FC = () => {
     checkAndCreateProfile();
   }, [user, profile, refreshProfile]);
 
-  const handleChangeAvatar = async () => {
-    setIsChangingAvatar(true);
-    const newSeed = Math.random().toString(36).substring(7);
-    try {
-      await updateAvatarSeed(newSeed);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setIsChangingAvatar(false);
-    }
-  };
-
   if (!user) {
     navigate('/login', { replace: true });
     return null;
@@ -108,15 +95,14 @@ const Profile: React.FC = () => {
             <MascotAvatar 
               seed={profile?.avatar_seed || user.id} 
               size={140} 
-              className={`border-4 border-white shadow-2xl transition-all ${isChangingAvatar ? 'animate-pulse scale-90' : 'group-active:scale-95'}`} 
+              className={`border-4 border-white shadow-2xl transition-all group-active:scale-95`} 
             />
-            <button 
-              onClick={handleChangeAvatar}
-              disabled={isChangingAvatar}
-              className="absolute -bottom-2 -right-2 w-12 h-12 bg-black text-[#E2F687] rounded-2xl flex items-center justify-center shadow-xl border-4 border-[#F8FAF5] active:scale-90 transition-transform disabled:opacity-50"
+            <Link 
+              to="/perfil/editar"
+              className="absolute -bottom-2 -right-2 w-12 h-12 bg-black text-[#E2F687] rounded-2xl flex items-center justify-center shadow-xl border-4 border-[#F8FAF5] active:scale-90 transition-transform btn-active"
             >
-                <RefreshCw size={20} className={isChangingAvatar ? 'animate-spin' : ''} />
-            </button>
+                <Settings size={20} />
+            </Link>
         </div>
         
         <div className="text-center mt-6">
@@ -153,6 +139,14 @@ const Profile: React.FC = () => {
         </div>
         
         <div className="flex flex-col">
+            <Link to="/perfil/editar" className="flex items-center justify-between p-5 hover:bg-gray-50 active:bg-gray-100 transition-all border-b border-black/5 group">
+                <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 bg-indigo-50 text-indigo-500 rounded-xl flex items-center justify-center"><Settings size={20} /></div>
+                    <span className="font-bold text-gray-900">Configurações do Perfil</span>
+                </div>
+                <ChevronRight size={18} className="text-gray-300" />
+            </Link>
+
             <button className="flex items-center justify-between p-5 hover:bg-gray-50 active:bg-gray-100 transition-all border-b border-black/5 group">
                 <div className="flex items-center gap-4">
                     <div className="w-10 h-10 bg-blue-50 text-blue-500 rounded-xl flex items-center justify-center"><History size={20} /></div>
@@ -208,7 +202,7 @@ const Profile: React.FC = () => {
       </div>
       
       <div className="text-center mt-4">
-        <span className="text-[10px] font-bold text-gray-300 uppercase tracking-[0.3em]">AjudaJá • v2.2.0</span>
+        <span className="text-[10px] font-bold text-gray-300 uppercase tracking-[0.3em]">AjudaJá • v2.3.0</span>
       </div>
     </div>
   );

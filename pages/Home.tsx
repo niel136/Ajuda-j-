@@ -31,7 +31,7 @@ const Home: React.FC = () => {
             </span>
           </div>
         </div>
-        <Link to="/perfil" className="w-10 h-10 rounded-xl bg-white border border-black/5 flex items-center justify-center text-gray-400 active:scale-90 transition-transform">
+        <Link to="/perfil/editar" className="w-10 h-10 rounded-xl bg-white border border-black/5 flex items-center justify-center text-gray-400 active:scale-90 transition-transform btn-active">
           <Settings size={20} />
         </Link>
       </section>

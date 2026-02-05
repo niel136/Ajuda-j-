@@ -15,6 +15,7 @@ interface AppContextType {
   approveRequest: (id: string) => Promise<void>;
   updateUserRole: (role: string) => Promise<void>;
   updateAvatarSeed: (seed: string) => Promise<void>;
+  updateProfile: (updates: any) => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
 
@@ -149,6 +150,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     await refreshProfile();
   };
 
+  const updateProfile = async (updates: any) => {
+    if (!user) return;
+    const { error } = await supabase
+      .from('profiles')
+      .update(updates)
+      .eq('id', user.id);
+    if (error) throw error;
+    await refreshProfile();
+    await fetchRequests(); // Refresh feed in case names changed
+  };
+
   const addRequest = async (requestData: any) => {
     if (!user) return;
     const { error } = await supabase.from('pedidos_ajuda').insert([{
@@ -187,7 +199,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   return (
     <AppContext.Provider value={{ 
       user, profile, requests, isLoading, authChecked, login, register, logout, addRequest,
-      approveRequest, updateUserRole, updateAvatarSeed, refreshProfile
+      approveRequest, updateUserRole, updateAvatarSeed, updateProfile, refreshProfile
     }}>
       {children}
     </AppContext.Provider>

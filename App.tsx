@@ -19,6 +19,7 @@ import Signup from './pages/Signup';
 import AccountTypeSelection from './pages/AccountTypeSelection';
 import Admin from './pages/Admin';
 import Profile from './pages/Profile';
+import EditProfile from './pages/EditProfile';
 import Onboarding from './pages/Onboarding';
 
 // ProtectedRoute: Só bloqueia se authChecked for TRUE e USER for NULL.
@@ -71,6 +72,7 @@ const AppContent = () => {
         <Route path="/novo-pedido" element={<ProtectedRoute><CreateRequest /></ProtectedRoute>} />
         <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
         <Route path="/perfil" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+        <Route path="/perfil/editar" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
         <Route path="/impacto" element={
           <ProtectedRoute>
             <div className="p-8">

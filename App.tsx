@@ -17,6 +17,7 @@ import Profile from './pages/Profile';
 import EditProfile from './pages/EditProfile';
 import InviteFriends from './pages/InviteFriends';
 import DonationHistory from './pages/DonationHistory';
+import Impact from './pages/Impact';
 import Onboarding from './pages/Onboarding';
 
 // ProtectedRoute: Só bloqueia se authChecked for TRUE e USER for NULL.
@@ -72,14 +73,7 @@ const AppContent = () => {
         <Route path="/perfil/editar" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
         <Route path="/convidar" element={<ProtectedRoute><InviteFriends /></ProtectedRoute>} />
         <Route path="/historico" element={<ProtectedRoute><DonationHistory /></ProtectedRoute>} />
-        <Route path="/impacto" element={
-          <ProtectedRoute>
-            <div className="p-8">
-              <h1 className="text-2xl font-black">Seu Impacto</h1>
-              <p className="text-gray-400 font-bold mt-2 text-sm uppercase">Em desenvolvimento</p>
-            </div>
-          </ProtectedRoute>
-        } />
+        <Route path="/impacto" element={<ProtectedRoute><Impact /></ProtectedRoute>} />
         
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

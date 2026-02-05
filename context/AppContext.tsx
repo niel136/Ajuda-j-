@@ -2,11 +2,18 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 
+interface GlobalImpact {
+  totalRaised: number;
+  familiesHelped: number;
+  solidarityPulse: number;
+}
+
 interface AppContextType {
   user: any | null;
   profile: any | null;
   requests: any[];
   donations: any[];
+  globalImpact: GlobalImpact;
   isLoading: boolean;
   authChecked: boolean;
   login: (email: string, pass: string) => Promise<void>;
@@ -19,6 +26,7 @@ interface AppContextType {
   updateProfile: (updates: any) => Promise<void>;
   trackFeatureClick: (featureKey: string) => Promise<void>;
   addDonation: (requestId: string, amount: number) => Promise<void>;
+  registerSolidarityAction: () => Promise<void>;
   refreshProfile: () => Promise<void>;
   fetchDonations: () => Promise<void>;
 }
@@ -30,8 +38,42 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [profile, setProfile] = useState<any | null>(null);
   const [requests, setRequests] = useState<any[]>([]);
   const [donations, setDonations] = useState<any[]>([]);
+  const [globalImpact, setGlobalImpact] = useState<GlobalImpact>({
+    totalRaised: 0,
+    familiesHelped: 0,
+    solidarityPulse: 0
+  });
   const [isLoading, setIsLoading] = useState(true);
   const [authChecked, setAuthChecked] = useState(false);
+
+  const fetchGlobalImpact = useCallback(async () => {
+    try {
+      // Get sum of all donations
+      const { data: donationsData } = await supabase
+        .from('doacoes')
+        .select('valor');
+      
+      const total = donationsData?.reduce((acc, curr) => acc + (curr.valor || 0), 0) || 0;
+
+      // Get count of unique families (requests) helped
+      const { count: familiesCount } = await supabase
+        .from('pedidos_ajuda')
+        .select('*', { count: 'exact', head: true });
+
+      // Get Solidarity Actions (virtual support)
+      const { count: pulseCount } = await supabase
+        .from('impact_actions')
+        .select('*', { count: 'exact', head: true });
+
+      setGlobalImpact({
+        totalRaised: total,
+        familiesHelped: familiesCount || 0,
+        solidarityPulse: pulseCount || 0
+      });
+    } catch (e) {
+      console.error("Error fetching global impact:", e);
+    }
+  }, []);
 
   const fetchProfile = useCallback(async (userId: string) => {
     try {
@@ -123,12 +165,29 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     });
 
     fetchRequests();
+    fetchGlobalImpact();
+
+    // REAL-TIME LISTENERS
+    const donationChannel = supabase
+      .channel('schema-db-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'doacoes' }, () => {
+        fetchGlobalImpact();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'impact_actions' }, () => {
+        fetchGlobalImpact();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'pedidos_ajuda' }, () => {
+        fetchRequests();
+        fetchGlobalImpact();
+      })
+      .subscribe();
 
     return () => {
       subscription.unsubscribe();
+      supabase.removeChannel(donationChannel);
       clearTimeout(safetyTimer);
     };
-  }, [fetchProfile, fetchRequests, authChecked]);
+  }, [fetchProfile, fetchRequests, fetchGlobalImpact, authChecked]);
 
   useEffect(() => {
     if (user) {
@@ -171,7 +230,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     if (!user || !profile) return;
     
     try {
-      // 1. Registrar doação
       const { error: donationError } = await supabase
         .from('doacoes')
         .insert([{
@@ -181,7 +239,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         }]);
       if (donationError) throw donationError;
 
-      // 2. Atualizar pedido de ajuda
       const requestToUpdate = requests.find(r => r.id === requestId);
       const newArrecadado = (requestToUpdate?.valor_arrecadado || 0) + amount;
       await supabase
@@ -189,7 +246,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         .update({ valor_arrecadado: newArrecadado })
         .eq('id', requestId);
 
-      // 3. Atualizar perfil do doador
       const newDonationsCount = (profile.donations_count || 0) + 1;
       const newTotalDonated = (profile.total_donated || 0) + amount;
       await supabase
@@ -200,13 +256,27 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         })
         .eq('id', user.id);
 
-      // Refresh data
       await refreshProfile();
       await fetchRequests();
       await fetchDonations();
+      await fetchGlobalImpact();
     } catch (e) {
       console.error("Erro ao processar doação:", e);
       throw e;
+    }
+  };
+
+  const registerSolidarityAction = async () => {
+    if (!user) return;
+    try {
+      await supabase.from('impact_actions').insert([{
+        user_id: user.id,
+        action_type: 'solidarity_pulse'
+      }]);
+      // Local update for immediate feedback, real-time will confirm
+      setGlobalImpact(prev => ({ ...prev, solidarityPulse: prev.solidarityPulse + 1 }));
+    } catch (e) {
+      console.error("Error registering solidarity action:", e);
     }
   };
 
@@ -281,8 +351,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   return (
     <AppContext.Provider value={{ 
-      user, profile, requests, donations, isLoading, authChecked, login, register, logout, addRequest,
-      approveRequest, updateUserRole, updateAvatarSeed, updateProfile, trackFeatureClick, addDonation, refreshProfile, fetchDonations
+      user, profile, requests, donations, globalImpact, isLoading, authChecked, login, register, logout, addRequest,
+      approveRequest, updateUserRole, updateAvatarSeed, updateProfile, trackFeatureClick, addDonation, registerSolidarityAction, refreshProfile, fetchDonations
     }}>
       {children}
     </AppContext.Provider>

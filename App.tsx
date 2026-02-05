@@ -1,7 +1,7 @@
 
 import React from 'react';
-// Consolidated imports into a single line to resolve resolution issues
-import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom';
+// Corrected import to use 'react-router' to resolve missing exported members in this environment
+import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router';
 import { AppProvider, useApp } from './context/AppContext';
 import { NotificationProvider } from './context/NotificationContext';
 import Layout from './components/Layout';
@@ -18,6 +18,7 @@ import EditProfile from './pages/EditProfile';
 import InviteFriends from './pages/InviteFriends';
 import DonationHistory from './pages/DonationHistory';
 import Impact from './pages/Impact';
+import Payments from './pages/Payments';
 import Onboarding from './pages/Onboarding';
 
 // ProtectedRoute: Só bloqueia se authChecked for TRUE e USER for NULL.
@@ -74,6 +75,7 @@ const AppContent = () => {
         <Route path="/convidar" element={<ProtectedRoute><InviteFriends /></ProtectedRoute>} />
         <Route path="/historico" element={<ProtectedRoute><DonationHistory /></ProtectedRoute>} />
         <Route path="/impacto" element={<ProtectedRoute><Impact /></ProtectedRoute>} />
+        <Route path="/pagamentos" element={<ProtectedRoute><Payments /></ProtectedRoute>} />
         
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

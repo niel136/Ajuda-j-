@@ -1,7 +1,7 @@
 
 import React from 'react';
-// Consolidated imports to ensure correct resolution of exported members
-import { useNavigate } from 'react-router-dom';
+// Corrected import to use 'react-router' to resolve missing exported members in this environment
+import { useNavigate } from 'react-router';
 import Button from '../components/Button';
 
 const Onboarding = () => {
@@ -24,7 +24,7 @@ const Onboarding = () => {
             Ajuda Rápida <br/>e Real.
           </h1>
           <p className="text-gray-500 font-medium text-lg leading-snug">
-            Conectamos quem precisa de ajuda com quem quer ajudar, de forma direta e segura.
+            Conectamos quem precisa de ajuda with quem quer ajudar, de forma direta e segura.
           </p>
         </section>
 

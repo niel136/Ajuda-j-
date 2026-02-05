@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
-// Consolidated imports to ensure correct resolution of exported members
-import { useNavigate } from 'react-router-dom';
+// Corrected import to use 'react-router' to resolve missing exported members in this environment
+import { useNavigate } from 'react-router';
 import { useApp } from '../context/AppContext';
 import Button from '../components/Button';
 import { Sparkles, ArrowLeft, Send } from 'lucide-react';

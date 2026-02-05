@@ -1,7 +1,7 @@
 
 import React from 'react';
-// Consolidated imports to ensure correct resolution of exported members
-import { Link, useLocation } from 'react-router-dom';
+// Corrected import to use 'react-router' to resolve missing exported members in this environment
+import { Link, useLocation } from 'react-router';
 import { Home, Grid, Plus, User, Heart } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import MascotAvatar from './MascotAvatar';

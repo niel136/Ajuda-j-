@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
-// Consolidated imports to ensure correct resolution of exported members
-import { useNavigate, Link } from 'react-router-dom';
+// Corrected import to use 'react-router' to resolve missing exported members in this environment
+import { useNavigate, Link } from 'react-router';
 import { useApp } from '../context/AppContext';
 import Button from '../components/Button';
 import { ArrowLeft, User, Mail, Lock } from 'lucide-react';

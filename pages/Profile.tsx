@@ -5,11 +5,11 @@ import { useNotification } from '../context/NotificationContext';
 import Button from '../components/Button';
 import MascotAvatar from '../components/MascotAvatar';
 import { 
-  Bell, Shield, LogOut, ChevronRight, Settings, 
+  Bell, LogOut, ChevronRight, Settings, 
   History, Heart, CreditCard, Share2
 } from 'lucide-react';
-// Consolidated imports to ensure correct resolution of exported members
-import { useNavigate, Link } from 'react-router-dom';
+// Corrected import to use 'react-router' to resolve missing exported members in this environment
+import { useNavigate, Link } from 'react-router';
 import { supabase } from '../lib/supabase';
 
 const Profile: React.FC = () => {
@@ -95,14 +95,20 @@ const Profile: React.FC = () => {
 
   return (
     <div className="flex flex-col gap-8 pb-10 animate-app-in">
-      {/* HEADER DO PERFIL COM MASCOTE DINÂMICO */}
+      {/* HEADER DO PERFIL */}
       <section className="flex flex-col items-center pt-4">
         <div className="relative group">
-            <MascotAvatar 
-              seed={profile?.avatar_seed || user.id} 
-              size={140} 
-              className={`border-4 border-white shadow-2xl transition-all group-active:scale-95`} 
-            />
+            {profile?.avatar_url ? (
+              <div className="w-[140px] h-[140px] rounded-[3rem] overflow-hidden border-4 border-white shadow-2xl bg-gray-100">
+                 <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+              </div>
+            ) : (
+              <MascotAvatar 
+                seed={profile?.avatar_seed || user.id} 
+                size={140} 
+                className={`border-4 border-white shadow-2xl transition-all group-active:scale-95`} 
+              />
+            )}
             <Link 
               to="/perfil/editar"
               className="absolute -bottom-2 -right-2 w-12 h-12 bg-black text-[#E2F687] rounded-2xl flex items-center justify-center shadow-xl border-4 border-[#F8FAF5] active:scale-90 transition-transform btn-active"
@@ -121,10 +127,10 @@ const Profile: React.FC = () => {
         </div>
       </section>
 
-      {/* DASHBOARD DE IMPACTO */}
+      {/* IMPACT DASHBOARD */}
       <div className="grid grid-cols-2 gap-4">
          <div className="bg-white p-6 rounded-[2rem] border border-black/5 flex flex-col gap-2 shadow-sm">
-            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Ações</span>
+            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Suas Ações</span>
             <div className="flex items-end gap-1">
                 <span className="text-2xl font-extrabold text-black">{stats.donations}</span>
                 <Heart size={16} className="text-red-500 mb-1" fill="currentColor" />
@@ -133,19 +139,19 @@ const Profile: React.FC = () => {
          <div className="bg-white p-6 rounded-[2rem] border border-black/5 flex flex-col gap-2 shadow-sm">
             <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Impacto</span>
             <div className="flex items-end gap-1">
-                <span className="text-2xl font-extrabold text-black">R$ {stats.total}</span>
+                <span className="text-2xl font-extrabold text-black">R$ {stats.total.toLocaleString('pt-BR')}</span>
             </div>
          </div>
       </div>
 
-      {/* MENU DE OPÇÕES */}
+      {/* MENU */}
       <div className="bg-white rounded-[2.5rem] border border-black/5 overflow-hidden shadow-sm">
         <div className="p-4 border-b border-black/5 flex items-center justify-between bg-gray-50/30">
             <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2">Privacidade e Conta</h3>
         </div>
         
         <div className="flex flex-col">
-            <Link to="/perfil/editar" className="flex items-center justify-between p-5 hover:bg-gray-50 active:bg-gray-100 transition-all border-b border-black/5 group">
+            <Link to="/perfil/editar" className="flex items-center justify-between p-5 hover:bg-gray-50 active:bg-gray-100 transition-all border-b border-black/5">
                 <div className="flex items-center gap-4">
                     <div className="w-10 h-10 bg-indigo-50 text-indigo-500 rounded-xl flex items-center justify-center"><Settings size={20} /></div>
                     <span className="font-bold text-gray-900">Configurações do Perfil</span>
@@ -153,7 +159,7 @@ const Profile: React.FC = () => {
                 <ChevronRight size={18} className="text-gray-300" />
             </Link>
 
-            <Link to="/historico" className="flex items-center justify-between p-5 hover:bg-gray-50 active:bg-gray-100 transition-all border-b border-black/5 group">
+            <Link to="/historico" className="flex items-center justify-between p-5 hover:bg-gray-50 active:bg-gray-100 transition-all border-b border-black/5">
                 <div className="flex items-center gap-4">
                     <div className="w-10 h-10 bg-blue-50 text-blue-500 rounded-xl flex items-center justify-center"><History size={20} /></div>
                     <span className="font-bold text-gray-900">Meu Histórico</span>
@@ -161,26 +167,25 @@ const Profile: React.FC = () => {
                 <ChevronRight size={18} className="text-gray-300" />
             </Link>
 
-            <button className="flex items-center justify-between p-5 hover:bg-gray-50 active:bg-gray-100 transition-all border-b border-black/5 group">
+            <Link to="/pagamentos" className="flex items-center justify-between p-5 hover:bg-gray-50 active:bg-gray-100 transition-all border-b border-black/5">
                 <div className="flex items-center gap-4">
                     <div className="w-10 h-10 bg-orange-50 text-orange-500 rounded-xl flex items-center justify-center"><CreditCard size={20} /></div>
                     <span className="font-bold text-gray-900">Pagamentos</span>
                 </div>
                 <ChevronRight size={18} className="text-gray-300" />
-            </button>
+            </Link>
 
             <button 
               onClick={handleInviteClick}
-              className="flex items-center justify-between p-5 hover:bg-gray-50 active:bg-gray-100 transition-all group"
+              className="flex items-center justify-between p-5 hover:bg-gray-50 active:bg-gray-100 transition-all"
             >
                 <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 bg-green-50 text-green-500 rounded-xl flex items-center justify-center relative">
+                    <div className="w-10 h-10 bg-green-50 text-green-500 rounded-xl flex items-center justify-center">
                       <Share2 size={20} />
-                      <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white"></div>
                     </div>
                     <div className="flex flex-col">
                       <span className="font-bold text-gray-900 leading-none">Convidar Amigos</span>
-                      <span className="text-[9px] font-black text-green-600 uppercase tracking-widest mt-1">Gere Impacto</span>
+                      <span className="text-[9px] font-black text-green-600 uppercase tracking-widest mt-1">Transforme sua Rede</span>
                     </div>
                 </div>
                 <ChevronRight size={18} className="text-gray-300" />
@@ -188,7 +193,7 @@ const Profile: React.FC = () => {
         </div>
       </div>
 
-      {/* NOTIFICAÇÕES */}
+      {/* NOTIFICATIONS */}
       <div className="bg-white p-6 rounded-[2.5rem] border border-black/5 flex items-center justify-between shadow-sm">
         <div className="flex items-center gap-4">
             <div className={`w-10 h-10 ${permission === 'granted' ? 'bg-green-50 text-green-600' : 'bg-indigo-50 text-indigo-500'} rounded-xl flex items-center justify-center transition-colors`}>
@@ -204,7 +209,7 @@ const Profile: React.FC = () => {
         )}
       </div>
 
-      {/* BOTÃO DE SAÍDA */}
+      {/* LOGOUT */}
       <div className="px-2 mt-4">
         <Button 
           variant="outline" 
@@ -217,7 +222,7 @@ const Profile: React.FC = () => {
       </div>
       
       <div className="text-center mt-4">
-        <span className="text-[10px] font-bold text-gray-300 uppercase tracking-[0.3em]">AjudaJá • v2.4.0</span>
+        <span className="text-[10px] font-bold text-gray-300 uppercase tracking-[0.3em]">AjudaJá • Pro v2.5.0</span>
       </div>
     </div>
   );

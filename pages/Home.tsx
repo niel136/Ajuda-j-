@@ -1,6 +1,7 @@
 
 import React from 'react';
-import { Link } from 'react-router-dom';
+// Corrected import to use 'react-router' to resolve missing exported members in this environment
+import { Link } from 'react-router';
 import { ArrowUpRight, Heart, PlusCircle, Settings, TrendingUp } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import RequestCard from '../components/RequestCard';

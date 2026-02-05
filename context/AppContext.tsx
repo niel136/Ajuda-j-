@@ -26,7 +26,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [isLoading, setIsLoading] = useState(true);
   const [authChecked, setAuthChecked] = useState(false);
 
-  // Busca perfil de forma não bloqueante
+  // Busca perfil de forma totalmente silenciosa
   const fetchProfile = useCallback(async (userId: string) => {
     try {
       const { data, error } = await supabase
@@ -37,13 +37,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       
       if (!error && data) {
         setProfile(data);
-      } else if (error && error.code === 'PGRST116') {
-        // Se perfil não existe, não fazemos nada aqui para não bloquear.
-        // O componente Profile.tsx cuidará da criação se necessário.
+      } else {
+        // Se erro ou não existe, mantemos profile como null sem disparar erros globais
         setProfile(null);
       }
     } catch (e) {
-      console.warn("Falha silenciosa ao buscar perfil:", e);
+      setProfile(null);
     }
   }, []);
 
@@ -65,10 +64,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   }, []);
 
   useEffect(() => {
-    // TIMEOUT DE SEGURANÇA: 3 segundos para garantir que o usuário nunca trave
     const safetyTimer = setTimeout(() => {
       if (!authChecked) {
-        console.log("Sincronização: Timeout de segurança atingido.");
         setIsLoading(false);
         setAuthChecked(true);
       }
@@ -77,15 +74,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const initAuth = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        
         if (session?.user) {
           setUser(session.user);
-          // IMPORTANTE: Disparamos o fetchProfile, mas NÃO usamos await.
-          // Isso permite que o authChecked seja true IMEDIATAMENTE.
           fetchProfile(session.user.id);
         }
       } catch (e) {
-        console.error("Erro na checagem inicial de auth:", e);
+        console.error("Erro Auth:", e);
       } finally {
         setIsLoading(false);
         setAuthChecked(true);
@@ -96,8 +90,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     initAuth();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log("Auth Event:", event);
-      
       if (session?.user) {
         setUser(session.user);
         fetchProfile(session.user.id);
@@ -105,8 +97,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setUser(null);
         setProfile(null);
       }
-      
-      // Sempre libera a UI em eventos de mudança
       setIsLoading(false);
       setAuthChecked(true);
     });
@@ -130,13 +120,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       if (error) throw error;
       
       if (data.user) {
-        // Tenta criar perfil, mas se falhar o login já foi feito, então não bloqueamos
+        // Tentativa de criação inicial de perfil no banco
         await supabase.from('profiles').insert([{
           id: data.user.id,
           nome: name,
           tipo_conta: role,
           quer: role === 'donor' ? 'ajudar' : 'pedir_ajuda'
-        }]).select();
+        }]);
       }
     } catch (e) {
       throw e;

@@ -1,7 +1,6 @@
 
 import React, { useEffect } from 'react';
-// Corrected import to use 'react-router' to resolve missing exported members in this environment
-import { useNavigate } from 'react-router';
+import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { ArrowLeft, Heart, Calendar, DollarSign, ExternalLink } from 'lucide-react';
 import LoadingScreen from '../components/LoadingScreen';

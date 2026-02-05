@@ -1,7 +1,6 @@
 
 import React from 'react';
-// Corrected import to use 'react-router' to resolve missing exported members in this environment
-import { useNavigate } from 'react-router';
+import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { User, Heart, Building2, ChevronRight } from 'lucide-react';
 import { UserRole } from '../types';

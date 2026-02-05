@@ -1,7 +1,6 @@
 
 import React from 'react';
-// Corrected import to use 'react-router' to resolve missing exported members in this environment
-import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router';
+import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { AppProvider, useApp } from './context/AppContext';
 import { NotificationProvider } from './context/NotificationContext';
 import Layout from './components/Layout';
@@ -21,7 +20,6 @@ import Impact from './pages/Impact';
 import Payments from './pages/Payments';
 import Onboarding from './pages/Onboarding';
 
-// ProtectedRoute: Só bloqueia se authChecked for TRUE e USER for NULL.
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, authChecked } = useApp();
   const location = useLocation();
@@ -37,7 +35,6 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
   return <>{children}</>;
 };
 
-// PublicRoute: Evita loop de login
 const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, authChecked } = useApp();
   
@@ -55,7 +52,6 @@ const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 const AppContent = () => {
   const { authChecked } = useApp();
 
-  // Se não checou o auth ainda, mostra loading rápido.
   if (!authChecked) return <LoadingScreen />;
 
   return (

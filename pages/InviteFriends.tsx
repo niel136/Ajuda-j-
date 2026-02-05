@@ -1,7 +1,6 @@
 
 import React, { useState } from 'react';
-// Corrected import to use 'react-router' to resolve missing exported members in this environment
-import { useNavigate } from 'react-router';
+import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import Button from '../components/Button';
 import MascotAvatar from '../components/MascotAvatar';

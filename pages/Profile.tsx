@@ -8,8 +8,7 @@ import {
   Bell, LogOut, ChevronRight, Settings, 
   History, Heart, CreditCard, Share2
 } from 'lucide-react';
-// Corrected import to use 'react-router' to resolve missing exported members in this environment
-import { useNavigate, Link } from 'react-router';
+import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 
 const Profile: React.FC = () => {

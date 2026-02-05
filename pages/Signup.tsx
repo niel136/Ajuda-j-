@@ -1,7 +1,6 @@
 
 import React, { useState } from 'react';
-// Corrected import to use 'react-router' to resolve missing exported members in this environment
-import { useNavigate, Link } from 'react-router';
+import { useNavigate, Link } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import Button from '../components/Button';
 import { ArrowLeft, User, Mail, Lock } from 'lucide-react';

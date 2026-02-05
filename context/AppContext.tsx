@@ -26,6 +26,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [isLoading, setIsLoading] = useState(true);
   const [authChecked, setAuthChecked] = useState(false);
 
+  // Busca perfil de forma não bloqueante
   const fetchProfile = useCallback(async (userId: string) => {
     try {
       const { data, error } = await supabase
@@ -34,14 +35,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         .eq('id', userId)
         .single();
       
-      if (error) {
-        if (error.code !== 'PGRST116') console.warn("Erro ao buscar perfil:", error);
+      if (!error && data) {
+        setProfile(data);
+      } else if (error && error.code === 'PGRST116') {
+        // Se perfil não existe, não fazemos nada aqui para não bloquear.
+        // O componente Profile.tsx cuidará da criação se necessário.
         setProfile(null);
-        return;
       }
-      setProfile(data);
     } catch (e) {
-      setProfile(null);
+      console.warn("Falha silenciosa ao buscar perfil:", e);
     }
   }, []);
 
@@ -63,39 +65,48 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   }, []);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      if (isLoading) {
+    // TIMEOUT DE SEGURANÇA: 3 segundos para garantir que o usuário nunca trave
+    const safetyTimer = setTimeout(() => {
+      if (!authChecked) {
+        console.log("Sincronização: Timeout de segurança atingido.");
         setIsLoading(false);
         setAuthChecked(true);
       }
-    }, 4000);
+    }, 3000);
 
     const initAuth = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
+        
         if (session?.user) {
           setUser(session.user);
-          await fetchProfile(session.user.id);
+          // IMPORTANTE: Disparamos o fetchProfile, mas NÃO usamos await.
+          // Isso permite que o authChecked seja true IMEDIATAMENTE.
+          fetchProfile(session.user.id);
         }
       } catch (e) {
         console.error("Erro na checagem inicial de auth:", e);
       } finally {
         setIsLoading(false);
         setAuthChecked(true);
-        clearTimeout(timer);
+        clearTimeout(safetyTimer);
       }
     };
 
     initAuth();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log("Auth Event:", event);
+      
       if (session?.user) {
         setUser(session.user);
-        await fetchProfile(session.user.id);
+        fetchProfile(session.user.id);
       } else {
         setUser(null);
         setProfile(null);
       }
+      
+      // Sempre libera a UI em eventos de mudança
       setIsLoading(false);
       setAuthChecked(true);
     });
@@ -104,46 +115,38 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     return () => {
       subscription.unsubscribe();
-      clearTimeout(timer);
+      clearTimeout(safetyTimer);
     };
-  }, [fetchProfile, fetchRequests]);
+  }, [fetchProfile, fetchRequests, authChecked]);
 
   const login = async (email: string, pass: string) => {
-    setIsLoading(true);
     const { error } = await supabase.auth.signInWithPassword({ email, password: pass });
-    if (error) {
-      setIsLoading(false);
-      throw error;
-    }
+    if (error) throw error;
   };
 
   const register = async (email: string, pass: string, name: string, role: string) => {
-    setIsLoading(true);
     try {
       const { data, error } = await supabase.auth.signUp({ email, password: pass });
       if (error) throw error;
       
       if (data.user) {
-        const { error: profileError } = await supabase.from('profiles').insert([{
+        // Tenta criar perfil, mas se falhar o login já foi feito, então não bloqueamos
+        await supabase.from('profiles').insert([{
           id: data.user.id,
           nome: name,
           tipo_conta: role,
           quer: role === 'donor' ? 'ajudar' : 'pedir_ajuda'
-        }]);
-        if (profileError) console.error("Erro ao criar perfil no signup:", profileError);
+        }]).select();
       }
     } catch (e) {
-      setIsLoading(false);
       throw e;
     }
   };
 
   const logout = async () => {
-    setIsLoading(true);
     await supabase.auth.signOut();
     setUser(null);
     setProfile(null);
-    setIsLoading(false);
   };
 
   const addRequest = async (requestData: any) => {

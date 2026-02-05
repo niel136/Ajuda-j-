@@ -1,6 +1,5 @@
 
-import React, { useEffect } from 'react';
-// Corrected imports for react-router-dom v6
+import React from 'react';
 import { 
   HashRouter as Router, 
   Routes, 
@@ -22,15 +21,15 @@ import Admin from './pages/Admin';
 import Profile from './pages/Profile';
 import Onboarding from './pages/Onboarding';
 
-// Componente Wrapper para Rotas Protegidas
+// ProtectedRoute: Só bloqueia se authChecked for TRUE e USER for NULL.
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, isLoading, authChecked } = useApp();
+  const { user, authChecked } = useApp();
   const location = useLocation();
 
-  // Enquanto estiver checando a autenticação inicial, mostra loading
-  if (!authChecked || isLoading) return <LoadingScreen />;
+  if (!authChecked) {
+    return <LoadingScreen />;
+  }
   
-  // Se terminou de checar e não tem usuário, manda pro onboarding
   if (!user) {
     return <Navigate to="/onboarding" state={{ from: location }} replace />;
   }
@@ -38,11 +37,13 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
   return <>{children}</>;
 };
 
-// Componente para evitar que usuários logados acessem telas de login/onboarding
+// PublicRoute: Evita loop de login
 const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, authChecked, isLoading } = useApp();
+  const { user, authChecked } = useApp();
   
-  if (!authChecked || isLoading) return <LoadingScreen />;
+  if (!authChecked) {
+    return <LoadingScreen />;
+  }
   
   if (user) {
     return <Navigate to="/" replace />;
@@ -52,21 +53,19 @@ const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 };
 
 const AppContent = () => {
-  const { authChecked, isLoading } = useApp();
+  const { authChecked } = useApp();
 
-  // O AppContent só renderiza as rotas após a PRIMEIRA checagem de auth
-  if (!authChecked && isLoading) return <LoadingScreen />;
+  // Se não checou o auth ainda, mostra loading rápido.
+  if (!authChecked) return <LoadingScreen />;
 
   return (
     <Layout>
       <Routes>
-        {/* Rotas Públicas com Proteção contra usuários logados */}
         <Route path="/onboarding" element={<PublicRoute><Onboarding /></PublicRoute>} />
         <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
         <Route path="/signup" element={<PublicRoute><Signup /></PublicRoute>} />
         <Route path="/tipo-conta" element={<PublicRoute><AccountTypeSelection /></PublicRoute>} />
 
-        {/* Rotas Privadas com Redirecionamento replace() */}
         <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
         <Route path="/feed" element={<ProtectedRoute><Feed /></ProtectedRoute>} />
         <Route path="/novo-pedido" element={<ProtectedRoute><CreateRequest /></ProtectedRoute>} />

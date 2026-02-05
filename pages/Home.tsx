@@ -1,6 +1,5 @@
 
 import React from 'react';
-// Corrected import for Link
 import { Link } from 'react-router-dom';
 import { ArrowUpRight, Heart, PlusCircle, Settings, TrendingUp } from 'lucide-react';
 import { useApp } from '../context/AppContext';
@@ -9,25 +8,28 @@ import RequestCard from '../components/RequestCard';
 const Home: React.FC = () => {
   const { user, profile, requests } = useApp();
   
-  // Garante que o nome seja exibido de forma segura
+  // LOGICA DEFENSIVA: Fallback para todos os dados do perfil
   const firstName = profile?.nome?.split(' ')[0] || user?.email?.split('@')[0] || 'Usuário';
+  const roleLabel = profile?.tipo_conta === 'donor' ? 'Doador Ativo' : 'Comunidade';
+  const avatarUrl = profile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.id || 'anon'}`;
 
   return (
     <div className="flex flex-col gap-8 pb-10 animate-app-in">
       {/* Header amigável */}
       <section className="flex justify-between items-center px-1">
         <div className="flex items-center gap-4">
-          <Link to="/perfil" className="w-12 h-12 rounded-2xl overflow-hidden border border-black/5 bg-gray-100">
+          <Link to="/perfil" className="w-12 h-12 rounded-2xl overflow-hidden border border-black/5 bg-gray-100 flex items-center justify-center">
             <img 
-              src={profile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.id}`} 
+              src={avatarUrl} 
               alt="Avatar" 
               className="w-full h-full object-cover" 
+              onError={(e) => (e.currentTarget.src = 'https://api.dicebear.com/7.x/initials/svg?seed=' + firstName)}
             />
           </Link>
-          <div>
-            <h2 className="text-xl font-extrabold text-black tracking-tight leading-none">Olá, {firstName}</h2>
+          <div className="min-w-0">
+            <h2 className="text-xl font-extrabold text-black tracking-tight leading-none truncate max-w-[180px]">Olá, {firstName}</h2>
             <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 mt-1 inline-block">
-              {profile?.tipo_conta === 'donor' ? 'Doador Ativo' : 'Comunidade'}
+              {roleLabel}
             </span>
           </div>
         </div>
@@ -38,7 +40,7 @@ const Home: React.FC = () => {
 
       {/* Card de Mensagem do Dia */}
       <section>
-        <div className="bg-[#E2F687]/40 rounded-[2rem] p-5 flex items-center gap-4 border border-black/5">
+        <div className="bg-[#E2F687]/40 rounded-[2rem] p-5 flex items-center gap-4 border border-black/5 shadow-sm">
           <div className="w-16 h-16 shrink-0 bg-white/60 rounded-xl p-2 flex items-center justify-center overflow-hidden">
              <img src="https://i.postimg.cc/15FXPBTV/20260202-061509.png" alt="M" className="w-full h-auto" />
           </div>
@@ -56,19 +58,21 @@ const Home: React.FC = () => {
             <span className="text-[10px] font-black uppercase tracking-widest">Impacto Gerado</span>
           </div>
           <div className="flex items-baseline gap-1">
-            <span className="text-4xl font-extrabold">R$ 0,00</span>
+            <span className="text-4xl font-extrabold">R$ {(profile?.total_donated || 0).toLocaleString('pt-BR')}</span>
           </div>
           <div className="mt-8 flex gap-8">
             <div className="flex flex-col">
-              <span className="text-xl font-extrabold">0</span>
+              <span className="text-xl font-extrabold">{profile?.donations_count || 0}</span>
               <span className="text-[9px] font-bold text-gray-500 uppercase tracking-tighter">Ações</span>
             </div>
             <div className="flex flex-col">
-              <span className="text-xl font-extrabold">0</span>
-              <span className="text-[9px] font-bold text-gray-500 uppercase tracking-tighter">Conexões</span>
+              <span className="text-xl font-extrabold">{requests.length}</span>
+              <span className="text-[9px] font-bold text-gray-500 uppercase tracking-tighter">Pedidos Ativos</span>
             </div>
           </div>
         </div>
+        {/* Detalhe estético de fundo */}
+        <div className="absolute top-0 right-0 w-32 h-32 bg-[#E2F687]/10 rounded-full -mr-16 -mt-16 blur-3xl"></div>
       </div>
 
       {/* Atalhos Rápidos */}
@@ -97,7 +101,7 @@ const Home: React.FC = () => {
       {/* Feed Rápido */}
       <section className="flex flex-col gap-4">
         <div className="flex justify-between items-center px-1">
-          <h3 className="text-lg font-extrabold text-black tracking-tight">Pedidos Urgentes</h3>
+          <h3 className="text-lg font-extrabold text-black tracking-tight">Urgências Próximas</h3>
           <Link to="/feed" className="text-[10px] font-black text-gray-400 uppercase tracking-widest underline underline-offset-4">Ver todos</Link>
         </div>
         <div className="flex flex-col gap-4">
@@ -105,8 +109,8 @@ const Home: React.FC = () => {
             <RequestCard key={req.id} request={req} />
           ))}
           {requests.length === 0 && (
-            <div className="bg-gray-100/50 border-2 border-dashed border-black/5 rounded-[2rem] p-10 text-center">
-              <p className="text-gray-400 font-bold text-xs uppercase tracking-widest">Nada por aqui ainda</p>
+            <div className="bg-white border border-dashed border-black/5 rounded-[2rem] p-10 text-center">
+              <p className="text-gray-400 font-bold text-xs uppercase tracking-widest">Nenhum pedido aberto</p>
             </div>
           )}
         </div>

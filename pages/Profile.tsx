@@ -3,27 +3,27 @@ import React, { useEffect, useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { useNotification } from '../context/NotificationContext';
 import Button from '../components/Button';
+import MascotAvatar from '../components/MascotAvatar';
 import { 
-  Bell, Shield, LogOut, ChevronRight, Settings, 
-  History, Heart, CreditCard, Share2, User as UserIcon
+  Bell, Shield, LogOut, ChevronRight, RefreshCw, 
+  History, Heart, CreditCard, Share2
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 
 const Profile: React.FC = () => {
-  const { user, profile, logout, refreshProfile } = useApp();
+  const { user, profile, logout, refreshProfile, updateAvatarSeed } = useApp();
   const { permission, requestPermission } = useNotification();
   const navigate = useNavigate();
   const [isInitializing, setIsInitializing] = useState(false);
+  const [isChangingAvatar, setIsChangingAvatar] = useState(false);
 
-  // Auto-criação de perfil caso não exista - Silencioso e robusto
   useEffect(() => {
     const checkAndCreateProfile = async () => {
       if (!user?.id || profile) return;
 
       setIsInitializing(true);
       try {
-        // Tenta buscar novamente para garantir
         const { data, error } = await supabase
           .from('profiles')
           .select('*')
@@ -31,14 +31,15 @@ const Profile: React.FC = () => {
           .single();
 
         if (error && error.code === 'PGRST116') {
-          // Perfil ausente não é erro: Criamos agora
           const defaultName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'Usuário';
           const defaultRole = localStorage.getItem('ajudaJa_pending_role') || 'donor';
+          const randomSeed = Math.random().toString(36).substring(7);
           
           await supabase.from('profiles').insert([{
             id: user.id,
             nome: defaultName,
             tipo_conta: defaultRole,
+            avatar_seed: randomSeed,
             quer: defaultRole === 'donor' ? 'ajudar' : 'pedir_ajuda',
             donations_count: 0,
             total_donated: 0
@@ -56,6 +57,18 @@ const Profile: React.FC = () => {
     checkAndCreateProfile();
   }, [user, profile, refreshProfile]);
 
+  const handleChangeAvatar = async () => {
+    setIsChangingAvatar(true);
+    const newSeed = Math.random().toString(36).substring(7);
+    try {
+      await updateAvatarSeed(newSeed);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsChangingAvatar(false);
+    }
+  };
+
   if (!user) {
     navigate('/login', { replace: true });
     return null;
@@ -70,9 +83,7 @@ const Profile: React.FC = () => {
     }
   };
 
-  // Funções seguras de acesso com fallbacks totais
   const displayName = profile?.nome || user.user_metadata?.full_name || user.email?.split('@')[0] || 'Usuário';
-  const avatarUrl = profile?.avatar_url || user.user_metadata?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`;
   const roleLabel = () => {
     const role = profile?.tipo_conta || 'donor';
     const map: Record<string, string> = {
@@ -91,22 +102,21 @@ const Profile: React.FC = () => {
 
   return (
     <div className="flex flex-col gap-8 pb-10 animate-app-in">
-      {/* HEADER DO PERFIL */}
+      {/* HEADER DO PERFIL COM MASCOTE DINÂMICO */}
       <section className="flex flex-col items-center pt-4">
-        <div className="relative">
-            <div className={`w-32 h-32 rounded-[3rem] overflow-hidden border-4 border-white shadow-2xl bg-white flex items-center justify-center ${isInitializing ? 'animate-pulse' : ''}`}>
-                <img 
-                  src={avatarUrl} 
-                  alt="Avatar" 
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    e.currentTarget.src = `https://api.dicebear.com/7.x/initials/svg?seed=${displayName}`;
-                  }}
-                />
-            </div>
-            <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-black rounded-2xl flex items-center justify-center text-[#E2F687] shadow-xl border-4 border-[#F8FAF5]">
-                <Settings size={18} />
-            </div>
+        <div className="relative group">
+            <MascotAvatar 
+              seed={profile?.avatar_seed || user.id} 
+              size={140} 
+              className={`border-4 border-white shadow-2xl transition-all ${isChangingAvatar ? 'animate-pulse scale-90' : 'group-active:scale-95'}`} 
+            />
+            <button 
+              onClick={handleChangeAvatar}
+              disabled={isChangingAvatar}
+              className="absolute -bottom-2 -right-2 w-12 h-12 bg-black text-[#E2F687] rounded-2xl flex items-center justify-center shadow-xl border-4 border-[#F8FAF5] active:scale-90 transition-transform disabled:opacity-50"
+            >
+                <RefreshCw size={20} className={isChangingAvatar ? 'animate-spin' : ''} />
+            </button>
         </div>
         
         <div className="text-center mt-6">
@@ -198,7 +208,7 @@ const Profile: React.FC = () => {
       </div>
       
       <div className="text-center mt-4">
-        <span className="text-[10px] font-bold text-gray-300 uppercase tracking-[0.3em]">AjudaJá • v2.1.2</span>
+        <span className="text-[10px] font-bold text-gray-300 uppercase tracking-[0.3em]">AjudaJá • v2.2.0</span>
       </div>
     </div>
   );

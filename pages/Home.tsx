@@ -4,26 +4,24 @@ import { Link } from 'react-router-dom';
 import { ArrowUpRight, Heart, PlusCircle, Settings, TrendingUp } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import RequestCard from '../components/RequestCard';
+import MascotAvatar from '../components/MascotAvatar';
 
 const Home: React.FC = () => {
   const { user, profile, requests } = useApp();
   
-  // LOGICA DEFENSIVA: Fallback para todos os dados do perfil
   const firstName = profile?.nome?.split(' ')[0] || user?.email?.split('@')[0] || 'Usuário';
   const roleLabel = profile?.tipo_conta === 'donor' ? 'Doador Ativo' : 'Comunidade';
-  const avatarUrl = profile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.id || 'anon'}`;
 
   return (
     <div className="flex flex-col gap-8 pb-10 animate-app-in">
       {/* Header amigável */}
       <section className="flex justify-between items-center px-1">
         <div className="flex items-center gap-4">
-          <Link to="/perfil" className="w-12 h-12 rounded-2xl overflow-hidden border border-black/5 bg-gray-100 flex items-center justify-center">
-            <img 
-              src={avatarUrl} 
-              alt="Avatar" 
-              className="w-full h-full object-cover" 
-              onError={(e) => (e.currentTarget.src = 'https://api.dicebear.com/7.x/initials/svg?seed=' + firstName)}
+          <Link to="/perfil" className="block active:scale-95 transition-transform">
+            <MascotAvatar 
+              seed={profile?.avatar_seed || user?.id || 'anon'} 
+              size={56} 
+              className="border-2 border-white shadow-md rounded-2xl"
             />
           </Link>
           <div className="min-w-0">
@@ -33,7 +31,7 @@ const Home: React.FC = () => {
             </span>
           </div>
         </div>
-        <Link to="/perfil" className="w-10 h-10 rounded-xl bg-white border border-black/5 flex items-center justify-center text-gray-400">
+        <Link to="/perfil" className="w-10 h-10 rounded-xl bg-white border border-black/5 flex items-center justify-center text-gray-400 active:scale-90 transition-transform">
           <Settings size={20} />
         </Link>
       </section>
@@ -71,7 +69,6 @@ const Home: React.FC = () => {
             </div>
           </div>
         </div>
-        {/* Detalhe estético de fundo */}
         <div className="absolute top-0 right-0 w-32 h-32 bg-[#E2F687]/10 rounded-full -mr-16 -mt-16 blur-3xl"></div>
       </div>
 

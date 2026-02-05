@@ -14,6 +14,7 @@ interface AppContextType {
   addRequest: (request: any) => Promise<void>;
   approveRequest: (id: string) => Promise<void>;
   updateUserRole: (role: string) => Promise<void>;
+  updateAvatarSeed: (seed: string) => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
 
@@ -26,7 +27,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [isLoading, setIsLoading] = useState(true);
   const [authChecked, setAuthChecked] = useState(false);
 
-  // Busca perfil de forma totalmente silenciosa
   const fetchProfile = useCallback(async (userId: string) => {
     try {
       const { data, error } = await supabase
@@ -38,7 +38,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       if (!error && data) {
         setProfile(data);
       } else {
-        // Se erro ou não existe, mantemos profile como null sem disparar erros globais
         setProfile(null);
       }
     } catch (e) {
@@ -54,7 +53,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     try {
       const { data, error } = await supabase
         .from('pedidos_ajuda')
-        .select(`*, profiles(nome, avatar_url)`)
+        .select(`*, profiles(nome, avatar_url, avatar_seed)`)
         .order('created_at', { ascending: false });
       
       if (!error) setRequests(data || []);
@@ -120,11 +119,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       if (error) throw error;
       
       if (data.user) {
-        // Tentativa de criação inicial de perfil no banco
+        const randomSeed = Math.random().toString(36).substring(7);
         await supabase.from('profiles').insert([{
           id: data.user.id,
           nome: name,
           tipo_conta: role,
+          avatar_seed: randomSeed,
           quer: role === 'donor' ? 'ajudar' : 'pedir_ajuda'
         }]);
       }
@@ -137,6 +137,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     await supabase.auth.signOut();
     setUser(null);
     setProfile(null);
+  };
+
+  const updateAvatarSeed = async (seed: string) => {
+    if (!user) return;
+    const { error } = await supabase
+      .from('profiles')
+      .update({ avatar_seed: seed })
+      .eq('id', user.id);
+    if (error) throw error;
+    await refreshProfile();
   };
 
   const addRequest = async (requestData: any) => {
@@ -177,7 +187,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   return (
     <AppContext.Provider value={{ 
       user, profile, requests, isLoading, authChecked, login, register, logout, addRequest,
-      approveRequest, updateUserRole, refreshProfile
+      approveRequest, updateUserRole, updateAvatarSeed, refreshProfile
     }}>
       {children}
     </AppContext.Provider>

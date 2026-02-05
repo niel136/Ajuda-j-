@@ -1,6 +1,8 @@
+
 import React, { useState } from 'react';
 import { MapPin, ChevronDown, ChevronUp, CreditCard, Share2 } from 'lucide-react';
 import Button from './Button';
+import MascotAvatar from './MascotAvatar';
 
 const RequestCard: React.FC<{ request: any; minimal?: boolean }> = ({ request, minimal = false }) => {
   const [showDonate, setShowDonate] = useState(false);
@@ -36,7 +38,12 @@ const RequestCard: React.FC<{ request: any; minimal?: boolean }> = ({ request, m
           </h3>
           
           <div className="flex items-center text-gray-400 text-xs mt-1 font-bold">
-            <MapPin size={12} className="mr-1 flex-shrink-0" />
+            {request.profiles?.avatar_url ? (
+              <img src={request.profiles.avatar_url} className="w-4 h-4 rounded-full mr-1 object-cover" alt="" />
+            ) : (
+              <MascotAvatar seed={request.profiles?.avatar_seed || request.user_id} size={16} className="mr-1 rounded-full border-none bg-transparent" />
+            )}
+            <MapPin size={10} className="mr-0.5 flex-shrink-0" />
             <span className="truncate">{request.profiles?.nome || 'Anônimo'}</span>
           </div>
         </div>

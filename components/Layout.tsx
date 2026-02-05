@@ -1,15 +1,14 @@
 
 import React from 'react';
-// Corrected imports for react-router-dom v6
 import { Link, useLocation } from 'react-router-dom';
 import { Home, Grid, Plus, User, Heart } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import MascotAvatar from './MascotAvatar';
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user } = useApp();
+  const { user, profile } = useApp();
   const location = useLocation();
   
-  // Esconder layout em telas de fluxo inicial
   const isAuthPage = ['/login', '/signup', '/onboarding', '/tipo-conta'].includes(location.pathname);
   
   if (isAuthPage) {
@@ -23,7 +22,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       
       {/* HEADER */}
       <header className="sticky top-0 z-40 bg-[#F8FAF5]/90 backdrop-blur-md px-6 py-4 flex justify-between items-center pt-safe border-b border-black/5">
-        <Link to="/" className="flex items-center gap-2">
+        <Link to="/" className="flex items-center gap-2 active:scale-95 transition-transform">
             <img 
               src="https://i.postimg.cc/DyndbWTX/20260202-061526.png" 
               alt="AjudaJá" 
@@ -33,10 +32,10 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         </Link>
         {user && (
           <Link to="/perfil" className="btn-active">
-            <img 
-              src={user.avatarUrl} 
-              className="w-10 h-10 rounded-2xl border-2 border-white shadow-md object-cover" 
-              alt="Profile" 
+            <MascotAvatar 
+              seed={profile?.avatar_seed || user.id} 
+              size={40} 
+              className="border-2 border-white shadow-md rounded-xl" 
             />
           </Link>
         )}

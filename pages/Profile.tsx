@@ -153,13 +153,13 @@ const Profile: React.FC = () => {
                 <ChevronRight size={18} className="text-gray-300" />
             </Link>
 
-            <button className="flex items-center justify-between p-5 hover:bg-gray-50 active:bg-gray-100 transition-all border-b border-black/5 group">
+            <Link to="/historico" className="flex items-center justify-between p-5 hover:bg-gray-50 active:bg-gray-100 transition-all border-b border-black/5 group">
                 <div className="flex items-center gap-4">
                     <div className="w-10 h-10 bg-blue-50 text-blue-500 rounded-xl flex items-center justify-center"><History size={20} /></div>
                     <span className="font-bold text-gray-900">Meu Histórico</span>
                 </div>
                 <ChevronRight size={18} className="text-gray-300" />
-            </button>
+            </Link>
 
             <button className="flex items-center justify-between p-5 hover:bg-gray-50 active:bg-gray-100 transition-all border-b border-black/5 group">
                 <div className="flex items-center gap-4">

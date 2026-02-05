@@ -1,12 +1,17 @@
 
 import React, { useState } from 'react';
-import { MapPin, ChevronDown, ChevronUp, CreditCard, Share2 } from 'lucide-react';
+import { MapPin, ChevronDown, ChevronUp, CreditCard, Share2, CheckCircle2, DollarSign } from 'lucide-react';
 import Button from './Button';
 import MascotAvatar from './MascotAvatar';
+import { useApp } from '../context/AppContext';
 
 const RequestCard: React.FC<{ request: any; minimal?: boolean }> = ({ request, minimal = false }) => {
+  const { addDonation } = useApp();
   const [showDonate, setShowDonate] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+  const [amount, setAmount] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const valorMeta = Number(request.valor_meta) || 1;
   const valorArrecadado = Number(request.valor_arrecadado) || 0;
@@ -14,7 +19,28 @@ const RequestCard: React.FC<{ request: any; minimal?: boolean }> = ({ request, m
 
   const handleCopyPix = () => {
     navigator.clipboard.writeText(request.pix_key || '');
-    alert('Chave Pix copiada com sucesso!');
+    alert('Chave Pix copiada com sucesso! Após fazer a transferência, confirme aqui para atualizar o progresso.');
+  };
+
+  const handleConfirmDonation = async () => {
+    const value = parseFloat(amount);
+    if (isNaN(value) || value <= 0) {
+      alert('Por favor, insira um valor válido para confirmar sua doação.');
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      await addDonation(request.id, value);
+      setConfirming(false);
+      setAmount('');
+      setShowDonate(false);
+      alert('Doação registrada com sucesso! Obrigado por ajudar.');
+    } catch (e) {
+      alert('Erro ao registrar doação. Tente novamente.');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   return (
@@ -74,9 +100,12 @@ const RequestCard: React.FC<{ request: any; minimal?: boolean }> = ({ request, m
                 <Button 
                     variant={showDonate ? "secondary" : "black"} 
                     fullWidth 
-                    onClick={() => setShowDonate(!showDonate)}
+                    onClick={() => {
+                      setShowDonate(!showDonate);
+                      setConfirming(false);
+                    }}
                 >
-                    {showDonate ? 'Fechar' : 'Ver Chave Pix'}
+                    {showDonate ? 'Fechar' : 'Quero Ajudar'}
                 </Button>
                 
                 <button 
@@ -95,20 +124,55 @@ const RequestCard: React.FC<{ request: any; minimal?: boolean }> = ({ request, m
 
             {showDonate && (
                 <div className="animate-app-in space-y-4 pt-4 border-t border-black/5">
-                    <div className="bg-gray-50 p-5 rounded-2xl flex flex-col items-center border border-black/5">
-                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Chave Pix para Doação</span>
-                        <p className="font-black text-sm text-center break-all select-all text-black bg-white p-3 rounded-xl border border-black/5 w-full">
-                          {request.pix_key || 'Chave não disponível'}
-                        </p>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                        <Button variant="primary" fullWidth onClick={handleCopyPix}>
-                            <CreditCard size={18} className="mr-2" /> Copiar
-                        </Button>
-                        <Button variant="secondary" fullWidth onClick={() => {}}>
-                            <Share2 size={18} className="mr-2" /> Compartilhar
-                        </Button>
-                    </div>
+                    {!confirming ? (
+                      <>
+                        <div className="bg-gray-50 p-5 rounded-2xl flex flex-col items-center border border-black/5">
+                            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 text-center">Escaneie ou copie a Chave Pix</span>
+                            <p className="font-black text-sm text-center break-all select-all text-black bg-white p-4 rounded-xl border border-black/5 w-full shadow-sm">
+                              {request.pix_key || 'Chave não disponível'}
+                            </p>
+                        </div>
+                        <div className="grid grid-cols-1 gap-3">
+                            <Button variant="primary" fullWidth onClick={handleCopyPix} className="h-14">
+                                <CreditCard size={18} className="mr-2" /> Copiar Chave
+                            </Button>
+                            <Button variant="black" fullWidth onClick={() => setConfirming(true)} className="h-14 bg-gray-900">
+                                <CheckCircle2 size={18} className="mr-2 text-[#E2F687]" /> Já fiz o Pix, confirmar!
+                            </Button>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="bg-[#F8FAF5] p-6 rounded-3xl border border-black/10 animate-app-in">
+                        <div className="flex items-center gap-2 mb-4">
+                           <DollarSign size={20} className="text-green-600" />
+                           <h4 className="font-black text-black uppercase text-[10px] tracking-widest">Quanto você doou?</h4>
+                        </div>
+                        <div className="flex gap-2">
+                          <input 
+                            type="number" 
+                            autoFocus
+                            placeholder="R$ 0,00"
+                            value={amount}
+                            onChange={(e) => setAmount(e.target.value)}
+                            className="flex-1 bg-white border border-black/5 rounded-2xl p-4 font-bold outline-none focus:ring-2 focus:ring-black"
+                          />
+                          <Button 
+                            variant="black" 
+                            isLoading={isProcessing}
+                            onClick={handleConfirmDonation}
+                            className="px-8 rounded-2xl h-auto"
+                          >
+                            Ok
+                          </Button>
+                        </div>
+                        <button 
+                          onClick={() => setConfirming(false)}
+                          className="mt-4 text-[9px] font-black uppercase tracking-widest text-gray-400 hover:text-black transition-colors"
+                        >
+                          Voltar
+                        </button>
+                      </div>
+                    )}
                 </div>
             )}
           </div>

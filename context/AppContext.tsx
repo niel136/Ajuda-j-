@@ -6,6 +6,7 @@ interface AppContextType {
   user: any | null;
   profile: any | null;
   requests: any[];
+  donations: any[];
   isLoading: boolean;
   authChecked: boolean;
   login: (email: string, pass: string) => Promise<void>;
@@ -17,7 +18,9 @@ interface AppContextType {
   updateAvatarSeed: (seed: string) => Promise<void>;
   updateProfile: (updates: any) => Promise<void>;
   trackFeatureClick: (featureKey: string) => Promise<void>;
+  addDonation: (requestId: string, amount: number) => Promise<void>;
   refreshProfile: () => Promise<void>;
+  fetchDonations: () => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -26,6 +29,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [user, setUser] = useState<any | null>(null);
   const [profile, setProfile] = useState<any | null>(null);
   const [requests, setRequests] = useState<any[]>([]);
+  const [donations, setDonations] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [authChecked, setAuthChecked] = useState(false);
 
@@ -46,6 +50,21 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       setProfile(null);
     }
   }, []);
+
+  const fetchDonations = useCallback(async () => {
+    if (!user) return;
+    try {
+      const { data, error } = await supabase
+        .from('doacoes')
+        .select('*, pedidos_ajuda(titulo)')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+      
+      if (!error) setDonations(data || []);
+    } catch (e) {
+      console.error("Erro ao buscar doações:", e);
+    }
+  }, [user]);
 
   const refreshProfile = useCallback(async () => {
     if (user?.id) await fetchProfile(user.id);
@@ -97,6 +116,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       } else {
         setUser(null);
         setProfile(null);
+        setDonations([]);
       }
       setIsLoading(false);
       setAuthChecked(true);
@@ -109,6 +129,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       clearTimeout(safetyTimer);
     };
   }, [fetchProfile, fetchRequests, authChecked]);
+
+  useEffect(() => {
+    if (user) {
+      fetchDonations();
+    }
+  }, [user, fetchDonations]);
 
   const login = async (email: string, pass: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password: pass });
@@ -141,6 +167,49 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setProfile(null);
   };
 
+  const addDonation = async (requestId: string, amount: number) => {
+    if (!user || !profile) return;
+    
+    try {
+      // 1. Registrar doação
+      const { error: donationError } = await supabase
+        .from('doacoes')
+        .insert([{
+          user_id: user.id,
+          pedido_id: requestId,
+          valor: amount
+        }]);
+      if (donationError) throw donationError;
+
+      // 2. Atualizar pedido de ajuda
+      const requestToUpdate = requests.find(r => r.id === requestId);
+      const newArrecadado = (requestToUpdate?.valor_arrecadado || 0) + amount;
+      await supabase
+        .from('pedidos_ajuda')
+        .update({ valor_arrecadado: newArrecadado })
+        .eq('id', requestId);
+
+      // 3. Atualizar perfil do doador
+      const newDonationsCount = (profile.donations_count || 0) + 1;
+      const newTotalDonated = (profile.total_donated || 0) + amount;
+      await supabase
+        .from('profiles')
+        .update({ 
+          donations_count: newDonationsCount,
+          total_donated: newTotalDonated
+        })
+        .eq('id', user.id);
+
+      // Refresh data
+      await refreshProfile();
+      await fetchRequests();
+      await fetchDonations();
+    } catch (e) {
+      console.error("Erro ao processar doação:", e);
+      throw e;
+    }
+  };
+
   const updateAvatarSeed = async (seed: string) => {
     if (!user) return;
     const { error } = await supabase
@@ -164,7 +233,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const trackFeatureClick = async (featureKey: string) => {
     if (!user) return;
-    // Log intent to a generic interactions table for future activation tracking
     try {
       await supabase.from('feature_interactions').insert([{
         user_id: user.id,
@@ -213,8 +281,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   return (
     <AppContext.Provider value={{ 
-      user, profile, requests, isLoading, authChecked, login, register, logout, addRequest,
-      approveRequest, updateUserRole, updateAvatarSeed, updateProfile, trackFeatureClick, refreshProfile
+      user, profile, requests, donations, isLoading, authChecked, login, register, logout, addRequest,
+      approveRequest, updateUserRole, updateAvatarSeed, updateProfile, trackFeatureClick, addDonation, refreshProfile, fetchDonations
     }}>
       {children}
     </AppContext.Provider>

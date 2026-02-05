@@ -1,5 +1,6 @@
 
 import React from 'react';
+// Consolidated imports to ensure correct resolution of exported members
 import { Link, useLocation } from 'react-router-dom';
 import { Home, Grid, Plus, User, Heart } from 'lucide-react';
 import { useApp } from '../context/AppContext';

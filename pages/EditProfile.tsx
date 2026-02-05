@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+// Consolidated imports to ensure correct resolution of exported members
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import Button from '../components/Button';

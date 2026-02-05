@@ -16,6 +16,7 @@ interface AppContextType {
   updateUserRole: (role: string) => Promise<void>;
   updateAvatarSeed: (seed: string) => Promise<void>;
   updateProfile: (updates: any) => Promise<void>;
+  trackFeatureClick: (featureKey: string) => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
 
@@ -158,7 +159,21 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       .eq('id', user.id);
     if (error) throw error;
     await refreshProfile();
-    await fetchRequests(); // Refresh feed in case names changed
+    await fetchRequests();
+  };
+
+  const trackFeatureClick = async (featureKey: string) => {
+    if (!user) return;
+    // Log intent to a generic interactions table for future activation tracking
+    try {
+      await supabase.from('feature_interactions').insert([{
+        user_id: user.id,
+        feature_key: featureKey,
+        created_at: new Date().toISOString()
+      }]);
+    } catch (e) {
+      console.warn("Silent failure tracking click", e);
+    }
   };
 
   const addRequest = async (requestData: any) => {
@@ -199,7 +214,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   return (
     <AppContext.Provider value={{ 
       user, profile, requests, isLoading, authChecked, login, register, logout, addRequest,
-      approveRequest, updateUserRole, updateAvatarSeed, updateProfile, refreshProfile
+      approveRequest, updateUserRole, updateAvatarSeed, updateProfile, trackFeatureClick, refreshProfile
     }}>
       {children}
     </AppContext.Provider>

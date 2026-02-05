@@ -8,11 +8,12 @@ import {
   Bell, Shield, LogOut, ChevronRight, Settings, 
   History, Heart, CreditCard, Share2
 } from 'lucide-react';
+// Consolidated imports to ensure correct resolution of exported members
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 
 const Profile: React.FC = () => {
-  const { user, profile, logout, refreshProfile } = useApp();
+  const { user, profile, logout, refreshProfile, trackFeatureClick } = useApp();
   const { permission, requestPermission } = useNotification();
   const navigate = useNavigate();
   const [isInitializing, setIsInitializing] = useState(false);
@@ -68,6 +69,11 @@ const Profile: React.FC = () => {
     } catch (e) {
       console.error("Erro ao sair:", e);
     }
+  };
+
+  const handleInviteClick = () => {
+    trackFeatureClick('invite_friends_profile_button');
+    navigate('/convidar');
   };
 
   const displayName = profile?.nome || user.user_metadata?.full_name || user.email?.split('@')[0] || 'Usuário';
@@ -163,10 +169,19 @@ const Profile: React.FC = () => {
                 <ChevronRight size={18} className="text-gray-300" />
             </button>
 
-            <button className="flex items-center justify-between p-5 hover:bg-gray-50 active:bg-gray-100 transition-all group">
+            <button 
+              onClick={handleInviteClick}
+              className="flex items-center justify-between p-5 hover:bg-gray-50 active:bg-gray-100 transition-all group"
+            >
                 <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 bg-green-50 text-green-500 rounded-xl flex items-center justify-center"><Share2 size={20} /></div>
-                    <span className="font-bold text-gray-900">Convidar Amigos</span>
+                    <div className="w-10 h-10 bg-green-50 text-green-500 rounded-xl flex items-center justify-center relative">
+                      <Share2 size={20} />
+                      <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white"></div>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="font-bold text-gray-900 leading-none">Convidar Amigos</span>
+                      <span className="text-[9px] font-black text-green-600 uppercase tracking-widest mt-1">Gere Impacto</span>
+                    </div>
                 </div>
                 <ChevronRight size={18} className="text-gray-300" />
             </button>
@@ -202,7 +217,7 @@ const Profile: React.FC = () => {
       </div>
       
       <div className="text-center mt-4">
-        <span className="text-[10px] font-bold text-gray-300 uppercase tracking-[0.3em]">AjudaJá • v2.3.0</span>
+        <span className="text-[10px] font-bold text-gray-300 uppercase tracking-[0.3em]">AjudaJá • v2.4.0</span>
       </div>
     </div>
   );

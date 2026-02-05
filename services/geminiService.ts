@@ -23,10 +23,11 @@ export const enhanceDescription = async (
       Retorne apenas o texto melhorado.
     `;
 
-    // Using gemini-3-flash-preview for proofreading/text enhancement task
+    // Using gemini-3-flash-preview for proofreading/text enhancement task.
+    // Fixed: contents should be the prompt string directly for simple text tasks.
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
-      contents: [{ parts: [{ text: prompt }] }],
+      contents: prompt,
     });
 
     // Directly access the .text property

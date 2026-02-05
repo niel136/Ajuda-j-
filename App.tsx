@@ -1,12 +1,7 @@
 
 import React from 'react';
-import { 
-  HashRouter as Router, 
-  Routes, 
-  Route, 
-  useLocation, 
-  Navigate 
-} from 'react-router-dom';
+// Consolidated imports into a single line to resolve resolution issues
+import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { AppProvider, useApp } from './context/AppContext';
 import { NotificationProvider } from './context/NotificationContext';
 import Layout from './components/Layout';
@@ -20,6 +15,7 @@ import AccountTypeSelection from './pages/AccountTypeSelection';
 import Admin from './pages/Admin';
 import Profile from './pages/Profile';
 import EditProfile from './pages/EditProfile';
+import InviteFriends from './pages/InviteFriends';
 import Onboarding from './pages/Onboarding';
 
 // ProtectedRoute: Só bloqueia se authChecked for TRUE e USER for NULL.
@@ -73,6 +69,7 @@ const AppContent = () => {
         <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
         <Route path="/perfil" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
         <Route path="/perfil/editar" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
+        <Route path="/convidar" element={<ProtectedRoute><InviteFriends /></ProtectedRoute>} />
         <Route path="/impacto" element={
           <ProtectedRoute>
             <div className="p-8">

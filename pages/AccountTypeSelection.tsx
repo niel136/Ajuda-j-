@@ -1,6 +1,6 @@
 
 import React from 'react';
-// Corrected import for useNavigate
+// Consolidated imports to ensure correct resolution of exported members
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { User, Heart, Building2, ChevronRight } from 'lucide-react';

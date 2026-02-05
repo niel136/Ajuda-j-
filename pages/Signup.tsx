@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-// Corrected imports for react-router-dom v6
+// Consolidated imports to ensure correct resolution of exported members
 import { useNavigate, Link } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import Button from '../components/Button';

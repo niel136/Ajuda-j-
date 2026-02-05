@@ -7,7 +7,7 @@ interface AppContextType {
   profile: any | null;
   requests: any[];
   isLoading: boolean;
-  authChecked: boolean; // Novo estado para garantir que a primeira checagem terminou
+  authChecked: boolean;
   login: (email: string, pass: string) => Promise<void>;
   register: (email: string, pass: string, name: string, role: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -34,18 +34,20 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         .eq('id', userId)
         .single();
       
-      if (error) throw error;
+      if (error) {
+        if (error.code !== 'PGRST116') console.warn("Erro ao buscar perfil:", error);
+        setProfile(null);
+        return;
+      }
       setProfile(data);
     } catch (e) {
-      console.warn("Perfil não encontrado ou erro na busca:", e);
-      // Não travamos o app se o perfil falhar, apenas mantemos o perfil nulo
       setProfile(null);
     }
   }, []);
 
-  const refreshProfile = async () => {
+  const refreshProfile = useCallback(async () => {
     if (user?.id) await fetchProfile(user.id);
-  };
+  }, [user, fetchProfile]);
 
   const fetchRequests = useCallback(async () => {
     try {
@@ -61,17 +63,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   }, []);
 
   useEffect(() => {
-    // 1. SAFETY TIMEOUT: Se em 3.5 segundos nada carregar, forçamos o encerramento do loading
-    // Isso evita que o usuário fique preso na tela branca por falhas de rede/API
     const timer = setTimeout(() => {
       if (isLoading) {
-        console.log("Safety timeout disparado: forçando fim do loading.");
         setIsLoading(false);
         setAuthChecked(true);
       }
-    }, 3500);
+    }, 4000);
 
-    // 2. Checagem inicial da sessão
     const initAuth = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
@@ -90,10 +88,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     initAuth();
 
-    // 3. Listener de mudanças de estado (Login/Logout/Token Refresh)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log("Evento Auth:", event);
-      
       if (session?.user) {
         setUser(session.user);
         await fetchProfile(session.user.id);
@@ -101,7 +96,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setUser(null);
         setProfile(null);
       }
-      
       setIsLoading(false);
       setAuthChecked(true);
     });

@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router';
+import { Link } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import Button from '../components/Button';
 import { ArrowLeft, Mail, Lock } from 'lucide-react';
@@ -17,8 +18,8 @@ const Login: React.FC = () => {
     setError('');
     try {
       await login(email, password);
-      // Redirecionamento seguro para a home substituindo o histórico
-      navigate('/', { replace: true });
+      // Redirecionamento forçado imediato
+      window.location.href = '/';
     } catch (err: any) {
       setError(err.message || 'Erro ao entrar. Verifique seus dados.');
     }

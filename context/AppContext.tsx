@@ -1,9 +1,9 @@
 
-import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { StatusPedido, HelpRequest, UserRole } from '../types';
 import { analyzeRequestConfidence } from '../services/geminiService';
-import { APP_IMPACT_STATS } from '../constants';
+import { APP_IMPACT_STATS, INITIAL_REQUESTS } from '../constants';
 
 interface AppContextType {
   user: any | null;
@@ -23,7 +23,6 @@ interface AppContextType {
   submitProof: (requestId: string, url: string) => Promise<void>;
   updateProfile: (updates: any) => Promise<void>;
   refreshProfile: () => Promise<void>;
-  // Fix missing properties in AppContextType
   trackFeatureClick: (feature: string) => void;
   updateUserRole: (role: UserRole) => Promise<void>;
   fetchDonations: () => Promise<void>;
@@ -39,33 +38,47 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<any | null>(null);
   const [profile, setProfile] = useState<any | null>(null);
-  const [requests, setRequests] = useState<HelpRequest[]>([]);
+  const [requests, setRequests] = useState<HelpRequest[]>(INITIAL_REQUESTS);
   const [donations, setDonations] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
   const [globalImpact] = useState(APP_IMPACT_STATS);
+  
+  const authTimeoutRef = useRef<number | null>(null);
 
   const fetchProfile = useCallback(async (userId: string) => {
-    const { data } = await supabase.from('profiles').select('*').eq('id', userId).single();
-    setProfile(data || null);
+    try {
+      const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single();
+      if (!error) setProfile(data);
+    } catch (e) {
+      console.warn('Falha silenciosa ao buscar perfil:', e);
+    }
   }, []);
 
   const fetchRequests = useCallback(async () => {
-    const { data } = await supabase
-      .from('pedidos_ajuda')
-      .select('*, profiles(nome, avatar_url, avatar_seed)')
-      .order('created_at', { ascending: false });
-    setRequests(data || []);
+    try {
+      const { data, error } = await supabase
+        .from('pedidos_ajuda')
+        .select('*, profiles(nome, avatar_url, avatar_seed)')
+        .order('created_at', { ascending: false });
+      if (!error && data) setRequests(data);
+    } catch (e) {
+      console.warn('Falha silenciosa ao buscar pedidos:', e);
+    }
   }, []);
 
   const fetchDonations = useCallback(async () => {
     if (!user) return;
-    const { data } = await supabase
-      .from('doacoes')
-      .select('*, pedidos_ajuda(*)')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
-    setDonations(data || []);
+    try {
+      const { data, error } = await supabase
+        .from('doacoes')
+        .select('*, pedidos_ajuda(*)')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+      if (!error && data) setDonations(data);
+    } catch (e) {
+      console.warn('Falha silenciosa ao buscar doações:', e);
+    }
   }, [user]);
 
   const refreshProfile = useCallback(async () => {
@@ -73,124 +86,159 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   }, [user, fetchProfile]);
 
   const trackFeatureClick = (feature: string) => {
-    console.debug(`[Analytics] Feature clicked: ${feature}`);
+    console.debug(`[Analytics] Feature: ${feature}`);
   };
 
   const updateUserRole = async (role: UserRole) => {
     if (!user) return;
-    await supabase.from('profiles').update({ tipo_conta: role }).eq('id', user.id);
-    await fetchProfile(user.id);
+    try {
+      await supabase.from('profiles').upsert({ id: user.id, tipo_conta: role });
+      await fetchProfile(user.id);
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   useEffect(() => {
+    // SAFETY TIMEOUT: Se em 4 segundos o Supabase não responder, liberamos o app
+    authTimeoutRef.current = window.setTimeout(() => {
+      if (!authChecked) {
+        console.warn('Auth check timeout - Liberando renderização por contingência.');
+        setAuthChecked(true);
+      }
+    }, 4000);
+
     const init = async () => {
-      const { data: { session } } = await (supabase.auth as any).getSession();
-      if (session?.user) {
-        setUser(session.user);
-        await fetchProfile(session.user.id);
+      try {
+        const { data: { session } } = await (supabase.auth as any).getSession();
+        if (session?.user) {
+          setUser(session.user);
+          await fetchProfile(session.user.id);
+        }
+      } catch (e) {
+        console.error("Erro crítico na inicialização da sessão:", e);
+      } finally {
+        setAuthChecked(true);
+        if (authTimeoutRef.current) clearTimeout(authTimeoutRef.current);
       }
       await fetchRequests();
-      setIsLoading(false);
-      setAuthChecked(true);
     };
+    
     init();
 
-    const { data: { subscription } } = (supabase.auth as any).onAuthStateChange(async (event: any, session: any) => {
-      setUser(session?.user || null);
-      if (session?.user) await fetchProfile(session.user.id);
-      else setProfile(null);
+    const { data: { subscription } } = (supabase.auth as any).onAuthStateChange(async (_event: any, session: any) => {
+      const currentUser = session?.user || null;
+      setUser(currentUser);
+      if (currentUser) {
+        fetchProfile(currentUser.id);
+        fetchDonations();
+      } else {
+        setProfile(null);
+        setDonations([]);
+      }
+      setAuthChecked(true);
     });
-
-    const channel = supabase.channel('realtime-pedidos')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'pedidos_ajuda' }, () => fetchRequests())
-      .subscribe();
 
     return () => {
       subscription.unsubscribe();
-      supabase.removeChannel(channel);
+      if (authTimeoutRef.current) clearTimeout(authTimeoutRef.current);
     };
-  }, [fetchProfile, fetchRequests]);
+  }, [fetchProfile, fetchRequests, fetchDonations]);
 
   const login = async (e: string, p: string) => {
-    const { error } = await (supabase.auth as any).signInWithPassword({ email: e, password: p });
-    if (error) throw error;
+    setIsLoading(true);
+    try {
+      const { error } = await (supabase.auth as any).signInWithPassword({ email: e, password: p });
+      if (error) throw error;
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const register = async (e: string, p: string, n: string, r: string) => {
-    const { data, error } = await (supabase.auth as any).signUp({ email: e, password: p });
-    if (error) throw error;
-    if (data.user) {
-      await supabase.from('profiles').upsert({
-        id: data.user.id, nome: n, tipo_conta: r, avatar_seed: Math.random().toString(36).substring(7)
-      });
+    setIsLoading(true);
+    try {
+      const { data, error } = await (supabase.auth as any).signUp({ email: e, password: p });
+      if (error) throw error;
+      if (data.user) {
+        await supabase.from('profiles').upsert({
+          id: data.user.id, nome: n, tipo_conta: r, avatar_seed: Math.random().toString(36).substring(7)
+        });
+      }
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const logout = async () => {
     await (supabase.auth as any).signOut();
+    window.location.href = '/onboarding';
   };
 
-  // REGRAS DE NEGÓCIO - MOTOR DE PEDIDOS
-  
   const saveDraft = async (data: any) => {
-    if (!user) return;
-    await supabase.from('pedidos_ajuda').upsert({
+    if (!user) throw new Error("Não logado");
+    const { error } = await supabase.from('pedidos_ajuda').upsert({
       ...data,
       user_id: user.id,
       status: 'RASCUNHO',
       updated_at: new Date().toISOString()
     });
+    if (error) throw error;
+    await fetchRequests();
   };
 
   const submitForAnalysis = async (id: string) => {
-    const req = requests.find(r => r.id === id);
-    if (!req) return;
-    
-    const score = await analyzeRequestConfidence(req.titulo, req.descricao);
-    const status: StatusPedido = score < 50 ? 'EM_ANALISE_CRITICA' : 'EM_ANALISE';
-    
-    await supabase.from('pedidos_ajuda').update({ 
-      status, 
-      score_confianca_ia: score 
-    }).eq('id', id);
+    try {
+      const req = requests.find(r => r.id === id);
+      if (!req) return;
+      const score = await analyzeRequestConfidence(req.titulo, req.descricao);
+      const status: StatusPedido = score < 50 ? 'EM_ANALISE_CRITICA' : 'EM_ANALISE';
+      await supabase.from('pedidos_ajuda').update({ status, score_confianca_ia: score }).eq('id', id);
+      await fetchRequests();
+    } catch (e) {
+      alert("Erro ao enviar para análise. Tente novamente.");
+    }
   };
 
   const moderateRequest = async (id: string, decision: 'APROVAR' | 'NEGAR' | 'INFO') => {
     let status: StatusPedido = 'PUBLICADO';
     if (decision === 'NEGAR') status = 'NEGADO';
     if (decision === 'INFO') status = 'FALTA_INFO';
-    
     await supabase.from('pedidos_ajuda').update({ status }).eq('id', id);
+    await fetchRequests();
   };
 
   const processDonation = async (id: string, amount: number) => {
     const req = requests.find(r => r.id === id);
-    if (!req || req.status !== 'PUBLICADO') throw new Error("Não aceitando doações");
-
-    const newVal = (req.valor_atual || 0) + amount;
-    const isMetaBatida = newVal >= req.valor_meta;
-
-    await supabase.from('doacoes').insert({ pedido_id: id, user_id: user?.id, valor: amount });
-    await supabase.from('pedidos_ajuda').update({ 
-      valor_atual: newVal,
-      status: isMetaBatida ? 'META_BATIDA' : 'PUBLICADO'
-    }).eq('id', id);
+    if (!req) return;
+    try {
+      const newVal = (req.valor_atual || 0) + amount;
+      const isMetaBatida = newVal >= req.valor_meta;
+      await supabase.from('doacoes').insert({ pedido_id: id, user_id: user?.id, valor: amount });
+      await supabase.from('pedidos_ajuda').update({ 
+        valor_atual: newVal,
+        status: isMetaBatida ? 'META_BATIDA' : 'PUBLICADO'
+      }).eq('id', id);
+      await fetchRequests();
+    } catch (e) {
+      throw e;
+    }
   };
 
   const releaseFunds = async (id: string) => {
     await supabase.from('pedidos_ajuda').update({ status: 'AGUARDANDO_PROVA' }).eq('id', id);
+    await fetchRequests();
   };
 
   const submitProof = async (id: string, url: string) => {
-    await supabase.from('pedidos_ajuda').update({ 
-      url_prova_impacto: url,
-      status: 'CONCLUIDO'
-    }).eq('id', id);
+    await supabase.from('pedidos_ajuda').update({ url_prova_impacto: url, status: 'CONCLUIDO' }).eq('id', id);
+    await fetchRequests();
   };
 
   const updateProfile = async (updates: any) => {
     if (!user) return;
-    await supabase.from('profiles').upsert({ ...updates, id: user.id });
+    const { error } = await supabase.from('profiles').upsert({ ...updates, id: user.id });
+    if (error) throw error;
     await fetchProfile(user.id);
   };
 

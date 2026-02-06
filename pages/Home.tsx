@@ -9,12 +9,11 @@ import MascotAvatar from '../components/MascotAvatar';
 const Home: React.FC = () => {
   const { user, profile, requests } = useApp();
   
-  const firstName = profile?.nome?.split(' ')[0] || user?.email?.split('@')[0] || 'Usuário';
-  const roleLabel = profile?.tipo_conta === 'donor' ? 'Doador Ativo' : 'Comunidade';
+  const firstName = profile?.nome?.split(' ')[0] || user?.email?.split('@')[0] || 'Visitante';
+  const roleLabel = profile?.tipo_conta === 'donor' ? 'Doador Ativo' : (profile?.tipo_conta || 'Usuário');
 
   return (
     <div className="flex flex-col gap-8 pb-10 animate-app-in">
-      {/* Header amigável */}
       <section className="flex justify-between items-center px-1">
         <div className="flex items-center gap-4">
           <Link to="/perfil" className="block active:scale-95 transition-transform">
@@ -36,7 +35,6 @@ const Home: React.FC = () => {
         </Link>
       </section>
 
-      {/* Card de Mensagem do Dia */}
       <section>
         <div className="bg-[#E2F687]/40 rounded-[2rem] p-5 flex items-center gap-4 border border-black/5 shadow-sm">
           <div className="w-16 h-16 shrink-0 bg-white/60 rounded-xl p-2 flex items-center justify-center overflow-hidden">
@@ -48,7 +46,6 @@ const Home: React.FC = () => {
         </div>
       </section>
 
-      {/* Dashboard de Estatísticas */}
       <div className="bg-black rounded-[2rem] p-8 text-white relative overflow-hidden shadow-2xl">
         <div className="relative z-10">
           <div className="flex items-center gap-2 text-[#E2F687] mb-6">
@@ -64,7 +61,7 @@ const Home: React.FC = () => {
               <span className="text-[9px] font-bold text-gray-500 uppercase tracking-tighter">Ações</span>
             </div>
             <div className="flex flex-col">
-              <span className="text-xl font-extrabold">{requests.length}</span>
+              <span className="text-xl font-extrabold">{requests?.length || 0}</span>
               <span className="text-[9px] font-bold text-gray-500 uppercase tracking-tighter">Pedidos Ativos</span>
             </div>
           </div>
@@ -72,7 +69,6 @@ const Home: React.FC = () => {
         <div className="absolute top-0 right-0 w-32 h-32 bg-[#E2F687]/10 rounded-full -mr-16 -mt-16 blur-3xl"></div>
       </div>
 
-      {/* Atalhos Rápidos */}
       <section className="grid grid-cols-2 gap-4">
         <Link to="/novo-pedido" className="bg-white p-6 rounded-[2rem] border border-black/5 flex flex-col justify-between h-40 group shadow-sm active:scale-95 transition-all">
           <div className="w-12 h-12 bg-black text-[#E2F687] rounded-xl flex items-center justify-center">
@@ -95,17 +91,16 @@ const Home: React.FC = () => {
         </Link>
       </section>
 
-      {/* Feed Rápido */}
       <section className="flex flex-col gap-4">
         <div className="flex justify-between items-center px-1">
           <h3 className="text-lg font-extrabold text-black tracking-tight">Urgências Próximas</h3>
           <Link to="/feed" className="text-[10px] font-black text-gray-400 uppercase tracking-widest underline underline-offset-4">Ver todos</Link>
         </div>
         <div className="flex flex-col gap-4">
-          {requests.slice(0, 2).map(req => (
+          {(requests || []).slice(0, 2).map(req => (
             <RequestCard key={req.id} request={req} />
           ))}
-          {requests.length === 0 && (
+          {(!requests || requests.length === 0) && (
             <div className="bg-white border border-dashed border-black/5 rounded-[2rem] p-10 text-center">
               <p className="text-gray-400 font-bold text-xs uppercase tracking-widest">Nenhum pedido aberto</p>
             </div>

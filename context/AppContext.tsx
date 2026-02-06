@@ -1,33 +1,37 @@
 
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
-
-interface GlobalImpact {
-  totalRaised: number;
-  familiesHelped: number;
-  totalActions: number;
-}
+import { StatusPedido, HelpRequest, UserRole } from '../types';
+import { analyzeRequestConfidence } from '../services/geminiService';
+import { APP_IMPACT_STATS } from '../constants';
 
 interface AppContextType {
   user: any | null;
   profile: any | null;
-  requests: any[];
+  requests: HelpRequest[];
   donations: any[];
-  globalImpact: GlobalImpact;
   isLoading: boolean;
   authChecked: boolean;
   login: (email: string, pass: string) => Promise<void>;
   register: (email: string, pass: string, name: string, role: string) => Promise<void>;
   logout: () => Promise<void>;
-  addRequest: (request: any) => Promise<void>;
-  approveRequest: (id: string) => Promise<void>;
-  updateUserRole: (role: string) => Promise<void>;
-  updateAvatarSeed: (seed: string) => Promise<void>;
+  saveDraft: (request: any) => Promise<void>;
+  submitForAnalysis: (requestId: string) => Promise<void>;
+  moderateRequest: (requestId: string, decision: 'APROVAR' | 'NEGAR' | 'INFO') => Promise<void>;
+  processDonation: (requestId: string, amount: number) => Promise<void>;
+  releaseFunds: (requestId: string) => Promise<void>;
+  submitProof: (requestId: string, url: string) => Promise<void>;
   updateProfile: (updates: any) => Promise<void>;
-  trackFeatureClick: (featureKey: string) => Promise<void>;
-  addDonation: (requestId: string, amount: number) => Promise<void>;
   refreshProfile: () => Promise<void>;
+  // Fix missing properties in AppContextType
+  trackFeatureClick: (feature: string) => void;
+  updateUserRole: (role: UserRole) => Promise<void>;
   fetchDonations: () => Promise<void>;
+  globalImpact: {
+    familiesHelped: number;
+    totalRaised: number;
+    totalActions: number;
+  };
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -35,283 +39,168 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<any | null>(null);
   const [profile, setProfile] = useState<any | null>(null);
-  const [requests, setRequests] = useState<any[]>([]);
+  const [requests, setRequests] = useState<HelpRequest[]>([]);
   const [donations, setDonations] = useState<any[]>([]);
-  const [globalImpact, setGlobalImpact] = useState<GlobalImpact>({
-    totalRaised: 0,
-    familiesHelped: 0,
-    totalActions: 0
-  });
   const [isLoading, setIsLoading] = useState(true);
   const [authChecked, setAuthChecked] = useState(false);
-
-  const fetchGlobalImpact = useCallback(async () => {
-    try {
-      const { data: donationsData } = await supabase.from('doacoes').select('valor');
-      const total = donationsData?.reduce((acc, curr) => acc + (curr.valor || 0), 0) || 0;
-
-      const { count: familiesCount } = await supabase
-        .from('pedidos_ajuda')
-        .select('*', { count: 'exact', head: true })
-        .or('status.eq.Em Andamento,status.eq.Concluído');
-
-      const { count: actionsCount } = await supabase
-        .from('doacoes')
-        .select('*', { count: 'exact', head: true });
-
-      setGlobalImpact({
-        totalRaised: total,
-        familiesHelped: familiesCount || 0,
-        totalActions: actionsCount || 0
-      });
-    } catch (e) {
-      console.warn("Impact fetch skipped or failed - typical for RLS restrictive dev env", e);
-    }
-  }, []);
+  const [globalImpact] = useState(APP_IMPACT_STATS);
 
   const fetchProfile = useCallback(async (userId: string) => {
-    if (!userId) return;
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-      
-      if (!error && data) {
-        setProfile(data);
-      } else {
-        // If profile doesn't exist, we'll wait for the next refresh or create it during updateProfile
-        setProfile(null);
-      }
-    } catch (e) {
-      setProfile(null);
-    }
+    const { data } = await supabase.from('profiles').select('*').eq('id', userId).single();
+    setProfile(data || null);
+  }, []);
+
+  const fetchRequests = useCallback(async () => {
+    const { data } = await supabase
+      .from('pedidos_ajuda')
+      .select('*, profiles(nome, avatar_url, avatar_seed)')
+      .order('created_at', { ascending: false });
+    setRequests(data || []);
   }, []);
 
   const fetchDonations = useCallback(async () => {
     if (!user) return;
-    try {
-      const { data, error } = await supabase
-        .from('doacoes')
-        .select('*, pedidos_ajuda(titulo)')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-      
-      if (!error) setDonations(data || []);
-    } catch (e) {
-      console.error("Erro ao buscar doações:", e);
-    }
+    const { data } = await supabase
+      .from('doacoes')
+      .select('*, pedidos_ajuda(*)')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
+    setDonations(data || []);
   }, [user]);
 
   const refreshProfile = useCallback(async () => {
     if (user?.id) await fetchProfile(user.id);
   }, [user, fetchProfile]);
 
-  const fetchRequests = useCallback(async () => {
-    try {
-      const { data, error } = await supabase
-        .from('pedidos_ajuda')
-        .select(`*, profiles(nome, avatar_url, avatar_seed)`)
-        .order('created_at', { ascending: false });
-      
-      if (!error) setRequests(data || []);
-    } catch (e) {
-      console.error("Erro ao buscar pedidos:", e);
-    }
-  }, []);
+  const trackFeatureClick = (feature: string) => {
+    console.debug(`[Analytics] Feature clicked: ${feature}`);
+  };
+
+  const updateUserRole = async (role: UserRole) => {
+    if (!user) return;
+    await supabase.from('profiles').update({ tipo_conta: role }).eq('id', user.id);
+    await fetchProfile(user.id);
+  };
 
   useEffect(() => {
-    const initAuth = async () => {
-      try {
-        // Use type assertion to handle missing property errors in restricted type environments
-        const { data: { session } } = await (supabase.auth as any).getSession();
-        if (session?.user) {
-          setUser(session.user);
-          await fetchProfile(session.user.id);
-        }
-      } catch (e) {
-        console.error("Erro Auth Init:", e);
-      } finally {
-        setIsLoading(false);
-        setAuthChecked(true);
-      }
-    };
-
-    initAuth();
-
-    // Use type assertion to handle missing property errors in restricted type environments
-    const { data: { subscription } } = (supabase.auth as any).onAuthStateChange(async (event: any, session: any) => {
+    const init = async () => {
+      const { data: { session } } = await (supabase.auth as any).getSession();
       if (session?.user) {
         setUser(session.user);
         await fetchProfile(session.user.id);
-      } else {
-        setUser(null);
-        setProfile(null);
-        setDonations([]);
       }
+      await fetchRequests();
+      setIsLoading(false);
+      setAuthChecked(true);
+    };
+    init();
+
+    const { data: { subscription } } = (supabase.auth as any).onAuthStateChange(async (event: any, session: any) => {
+      setUser(session?.user || null);
+      if (session?.user) await fetchProfile(session.user.id);
+      else setProfile(null);
     });
 
-    fetchRequests();
-    fetchGlobalImpact();
-
-    const mainChannel = supabase
-      .channel('app-realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'doacoes' }, () => {
-        fetchGlobalImpact();
-        fetchDonations();
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'pedidos_ajuda' }, () => {
-        fetchRequests();
-        fetchGlobalImpact();
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
-        refreshProfile();
-      })
+    const channel = supabase.channel('realtime-pedidos')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'pedidos_ajuda' }, () => fetchRequests())
       .subscribe();
 
     return () => {
       subscription.unsubscribe();
-      supabase.removeChannel(mainChannel);
+      supabase.removeChannel(channel);
     };
-  }, [fetchProfile, fetchRequests, fetchGlobalImpact, fetchDonations, refreshProfile]);
+  }, [fetchProfile, fetchRequests]);
 
-  const login = async (email: string, pass: string) => {
-    // Use type assertion to handle missing property errors in restricted type environments
-    const { error } = await (supabase.auth as any).signInWithPassword({ email, password: pass });
+  const login = async (e: string, p: string) => {
+    const { error } = await (supabase.auth as any).signInWithPassword({ email: e, password: p });
     if (error) throw error;
   };
 
-  const register = async (email: string, pass: string, name: string, role: string) => {
-    // Use type assertion to handle missing property errors in restricted type environments
-    const { data, error } = await (supabase.auth as any).signUp({ email, password: pass });
+  const register = async (e: string, p: string, n: string, r: string) => {
+    const { data, error } = await (supabase.auth as any).signUp({ email: e, password: p });
     if (error) throw error;
-    
     if (data.user) {
-      const randomSeed = Math.random().toString(36).substring(7);
-      // Immediate UPSERT to prevent "profile not found" on first login
-      const { error: profileError } = await supabase.from('profiles').upsert([{
-        id: data.user.id,
-        nome: name,
-        tipo_conta: role,
-        avatar_seed: randomSeed,
-        quer: role === 'donor' ? 'ajudar' : 'pedir_ajuda'
-      }]);
-      if (profileError) console.error("Initial profile creation failed", profileError);
+      await supabase.from('profiles').upsert({
+        id: data.user.id, nome: n, tipo_conta: r, avatar_seed: Math.random().toString(36).substring(7)
+      });
     }
   };
 
   const logout = async () => {
-    // Use type assertion to handle missing property errors in restricted type environments
     await (supabase.auth as any).signOut();
-    setUser(null);
-    setProfile(null);
   };
 
-  const addDonation = async (requestId: string, amount: number) => {
-    if (!user) throw new Error("Usuário não autenticado");
-    
-    const { error: donationError } = await supabase
-      .from('doacoes')
-      .insert([{
-        user_id: user.id,
-        pedido_id: requestId,
-        valor: amount
-      }]);
-    if (donationError) throw donationError;
-
-    // Trigger update in request - logic usually handles increment in DB via function or trigger
-    // but we can help it from frontend for real-time responsiveness
-    const requestToUpdate = requests.find(r => r.id === requestId);
-    if (requestToUpdate) {
-      const newArrecadado = (requestToUpdate.valor_arrecadado || 0) + amount;
-      await supabase.from('pedidos_ajuda').update({ valor_arrecadado: newArrecadado }).eq('id', requestId);
-    }
-
-    if (profile) {
-      const newDonationsCount = (profile.donations_count || 0) + 1;
-      const newTotalDonated = (profile.total_donated || 0) + amount;
-      await supabase.from('profiles').update({ 
-        donations_count: newDonationsCount,
-        total_donated: newTotalDonated
-      }).eq('id', user.id);
-    }
-
-    await refreshProfile();
-    await fetchRequests();
-    await fetchDonations();
-    await fetchGlobalImpact();
-  };
-
-  const updateAvatarSeed = async (seed: string) => {
+  // REGRAS DE NEGÓCIO - MOTOR DE PEDIDOS
+  
+  const saveDraft = async (data: any) => {
     if (!user) return;
-    const { error } = await supabase.from('profiles').upsert({ id: user.id, avatar_seed: seed });
-    if (error) throw error;
-    await refreshProfile();
+    await supabase.from('pedidos_ajuda').upsert({
+      ...data,
+      user_id: user.id,
+      status: 'RASCUNHO',
+      updated_at: new Date().toISOString()
+    });
+  };
+
+  const submitForAnalysis = async (id: string) => {
+    const req = requests.find(r => r.id === id);
+    if (!req) return;
+    
+    const score = await analyzeRequestConfidence(req.titulo, req.descricao);
+    const status: StatusPedido = score < 50 ? 'EM_ANALISE_CRITICA' : 'EM_ANALISE';
+    
+    await supabase.from('pedidos_ajuda').update({ 
+      status, 
+      score_confianca_ia: score 
+    }).eq('id', id);
+  };
+
+  const moderateRequest = async (id: string, decision: 'APROVAR' | 'NEGAR' | 'INFO') => {
+    let status: StatusPedido = 'PUBLICADO';
+    if (decision === 'NEGAR') status = 'NEGADO';
+    if (decision === 'INFO') status = 'FALTA_INFO';
+    
+    await supabase.from('pedidos_ajuda').update({ status }).eq('id', id);
+  };
+
+  const processDonation = async (id: string, amount: number) => {
+    const req = requests.find(r => r.id === id);
+    if (!req || req.status !== 'PUBLICADO') throw new Error("Não aceitando doações");
+
+    const newVal = (req.valor_atual || 0) + amount;
+    const isMetaBatida = newVal >= req.valor_meta;
+
+    await supabase.from('doacoes').insert({ pedido_id: id, user_id: user?.id, valor: amount });
+    await supabase.from('pedidos_ajuda').update({ 
+      valor_atual: newVal,
+      status: isMetaBatida ? 'META_BATIDA' : 'PUBLICADO'
+    }).eq('id', id);
+  };
+
+  const releaseFunds = async (id: string) => {
+    await supabase.from('pedidos_ajuda').update({ status: 'AGUARDANDO_PROVA' }).eq('id', id);
+  };
+
+  const submitProof = async (id: string, url: string) => {
+    await supabase.from('pedidos_ajuda').update({ 
+      url_prova_impacto: url,
+      status: 'CONCLUIDO'
+    }).eq('id', id);
   };
 
   const updateProfile = async (updates: any) => {
-    if (!user) throw new Error("Necessário estar logado");
-    try {
-      // ALWAYS use UPSERT with current user ID to avoid profile mismatch or missing rows
-      const { error } = await supabase.from('profiles').upsert({
-        ...updates,
-        id: user.id,
-        updated_at: new Date().toISOString()
-      });
-      if (error) throw error;
-      await refreshProfile();
-      await fetchRequests();
-    } catch (e) {
-      console.error("Profile update failed", e);
-      throw e;
-    }
-  };
-
-  const trackFeatureClick = async (featureKey: string) => {
     if (!user) return;
-    try {
-      await supabase.from('feature_interactions').insert([{
-        user_id: user.id,
-        feature_key: featureKey,
-        created_at: new Date().toISOString()
-      }]);
-    } catch (e) {}
-  };
-
-  const addRequest = async (requestData: any) => {
-    if (!user) throw new Error("Logue para publicar um pedido");
-    const { error } = await supabase.from('pedidos_ajuda').insert([{
-      user_id: user.id,
-      titulo: requestData.title,
-      descricao: requestData.description,
-      categoria: requestData.category,
-      valor_meta: requestData.amountNeeded,
-      pix_key: requestData.pixKey,
-      status: 'Aberto'
-    }]);
-    if (error) throw error;
-    await fetchRequests();
-  };
-
-  const approveRequest = async (id: string) => {
-    const { error } = await supabase.from('pedidos_ajuda').update({ status: 'Em Andamento' }).eq('id', id);
-    if (error) throw error;
-    await fetchRequests();
-  };
-
-  const updateUserRole = async (role: string) => {
-    if (user) {
-      const { error } = await supabase.from('profiles').upsert({ id: user.id, tipo_conta: role });
-      if (error) throw error;
-      await fetchProfile(user.id);
-    }
+    await supabase.from('profiles').upsert({ ...updates, id: user.id });
+    await fetchProfile(user.id);
   };
 
   return (
     <AppContext.Provider value={{ 
-      user, profile, requests, donations, globalImpact, isLoading, authChecked, login, register, logout, addRequest,
-      approveRequest, updateUserRole, updateAvatarSeed, updateProfile, trackFeatureClick, addDonation, refreshProfile, fetchDonations
+      user, profile, requests, donations, isLoading, authChecked, 
+      login, register, logout, saveDraft, submitForAnalysis, 
+      moderateRequest, processDonation, releaseFunds, submitProof,
+      updateProfile, refreshProfile, trackFeatureClick, updateUserRole,
+      fetchDonations, globalImpact
     }}>
       {children}
     </AppContext.Provider>
@@ -320,6 +209,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
 export const useApp = () => {
   const context = useContext(AppContext);
-  if (context === undefined) throw new Error('useApp must be used within an AppProvider');
+  if (!context) throw new Error('useApp must be used within AppProvider');
   return context;
 };

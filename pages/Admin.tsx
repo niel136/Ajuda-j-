@@ -1,57 +1,65 @@
+
 import React from 'react';
 import { useApp } from '../context/AppContext';
 import Button from '../components/Button';
-import { Check, X } from 'lucide-react';
+import { Check, X, Info, AlertTriangle, ShieldCheck } from 'lucide-react';
 
 const Admin: React.FC = () => {
-  const { user, requests, approveRequest } = useApp();
+  const { user, profile, requests, moderateRequest } = useApp();
 
-  if (!user || user.role !== 'admin') {
-    return <div className="p-8 text-center text-red-600 font-bold">Acesso Negado</div>;
+  if (profile?.tipo_conta !== 'admin') {
+    return <div className="p-10 text-center font-black uppercase text-red-500">Acesso Restrito</div>;
   }
 
-  const pendingRequests = requests.filter(r => r.status === 'Aberto');
+  const pending = requests.filter(r => r.status === 'EM_ANALISE' || r.status === 'EM_ANALISE_CRITICA');
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold text-slate-900 mb-6">Painel Administrativo</h1>
+    <div className="animate-app-in">
+      <div className="mb-8">
+        <h2 className="text-3xl font-black text-black tracking-tighter">Moderação</h2>
+        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">Fila de Aprovação Real-time</p>
+      </div>
       
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-        <div className="p-4 border-b border-slate-100 bg-slate-50">
-          <h2 className="font-semibold text-slate-700">Pedidos Pendentes de Aprovação</h2>
-        </div>
-        
-        {pendingRequests.length === 0 ? (
-          <div className="p-8 text-center text-slate-500">
-            Nenhum pedido pendente no momento.
+      <div className="space-y-4">
+        {pending.length === 0 ? (
+          <div className="p-20 text-center border-2 border-dashed border-gray-100 rounded-[2.5rem]">
+            <p className="text-gray-300 font-black uppercase text-xs">Tudo limpo por aqui</p>
           </div>
         ) : (
-          <ul className="divide-y divide-slate-100">
-            {pendingRequests.map(req => (
-              <li key={req.id} className="p-4 hover:bg-slate-50 transition-colors">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-xs font-bold text-white bg-blue-500 px-2 py-0.5 rounded">{req.category}</span>
-                      <span className="text-xs text-slate-500">{new Date(req.createdAt).toLocaleDateString()}</span>
-                    </div>
-                    <h3 className="font-bold text-slate-800">{req.title}</h3>
-                    <p className="text-sm text-slate-600 line-clamp-1">{req.description}</p>
-                    <p className="text-xs text-slate-400 mt-1">Por: {req.userName} | Pix: {req.pixKey}</p>
+          pending.map(req => (
+            <div key={req.id} className="bg-white p-6 rounded-[2.5rem] border border-black/5 shadow-sm space-y-4">
+              <div className="flex justify-between items-start">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 mb-2">
+                    {req.status === 'EM_ANALISE_CRITICA' ? (
+                      <span className="bg-red-50 text-red-600 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-tight flex items-center gap-1">
+                        <AlertTriangle size={12}/> Análise Crítica
+                      </span>
+                    ) : (
+                      <span className="bg-blue-50 text-blue-600 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-tight">Análise Padrão</span>
+                    )}
+                    <span className="text-[9px] font-black text-gray-300 uppercase">Score IA: {req.score_confianca_ia}%</span>
                   </div>
-                  
-                  <div className="flex gap-2">
-                    <Button size="sm" variant="outline" className="text-red-600 hover:bg-red-50 border-red-200">
-                      <X size={16} />
-                    </Button>
-                    <Button size="sm" variant="secondary" onClick={() => approveRequest(req.id)}>
-                      <Check size={16} className="mr-1" /> Aprovar
-                    </Button>
-                  </div>
+                  <h3 className="font-black text-gray-900 text-lg leading-tight truncate">{req.titulo}</h3>
+                  <p className="text-xs text-gray-400 font-bold mt-1">Por: {req.profiles?.nome} | R$ {req.valor_meta}</p>
                 </div>
-              </li>
-            ))}
-          </ul>
+              </div>
+              
+              <p className="text-xs text-gray-500 line-clamp-3 bg-gray-50 p-4 rounded-2xl italic">"{req.descricao}"</p>
+              
+              <div className="grid grid-cols-3 gap-2">
+                <Button size="sm" variant="ghost" className="bg-blue-50 text-blue-600 h-12" onClick={() => moderateRequest(req.id, 'INFO')}>
+                  <Info size={16}/> Info
+                </Button>
+                <Button size="sm" variant="ghost" className="bg-red-50 text-red-600 h-12" onClick={() => moderateRequest(req.id, 'NEGAR')}>
+                  <X size={16}/> Negar
+                </Button>
+                <Button size="sm" variant="black" className="h-12" onClick={() => moderateRequest(req.id, 'APROVAR')}>
+                  <Check size={16} className="text-[#E2F687]"/> Aprovar
+                </Button>
+              </div>
+            </div>
+          ))
         )}
       </div>
     </div>

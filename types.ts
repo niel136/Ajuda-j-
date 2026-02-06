@@ -1,5 +1,7 @@
+
 export type UserRole = 'donor' | 'beneficiary' | 'business' | 'admin';
 
+// Added User interface to match MOCK_USER in constants.ts
 export interface User {
   id: string;
   name: string;
@@ -7,53 +9,49 @@ export interface User {
   phone: string;
   city: string;
   role: UserRole;
-  avatarUrl?: string;
-  // Campos para empresa
-  businessName?: string;
-  cnpj?: string;
-  areaOfExpertise?: string;
-  responsibleContact?: string;
+  avatarUrl: string;
   joinedAt: string;
   stats: {
     donationsCount: number;
     totalDonated: number;
     requestsCreated: number;
-  };
+  }
 }
 
+export type StatusPedido = 
+  | 'RASCUNHO'
+  | 'EM_ANALISE'
+  | 'EM_ANALISE_CRITICA'
+  | 'FALTA_INFO'
+  | 'NEGADO'
+  | 'PUBLICADO'
+  | 'META_BATIDA'
+  | 'ENCERRADO_PARCIAL'
+  | 'EXPIRADO'
+  | 'AGUARDANDO_PROVA'
+  | 'CONCLUIDO'
+  | 'BLOQUEADO_INADIMPLENTE';
+
 export type RequestCategory = 'Alimentação' | 'Saúde' | 'Reforma' | 'Educação' | 'Outros';
-export type RequestUrgency = 'Baixa' | 'Média' | 'Alta' | 'Crítica';
-export type RequestStatus = 'Aberto' | 'Em Andamento' | 'Concluído' | 'Cancelado';
 
 export interface HelpRequest {
   id: string;
-  userId: string;
-  userName: string;
-  title: string;
-  description: string;
-  category: RequestCategory;
-  amountNeeded: number;
-  amountRaised: number;
-  location: string;
-  urgency: RequestUrgency;
-  status: RequestStatus;
-  imageUrl: string;
-  pixKey: string;
-  createdAt: string;
-  updates: RequestUpdate[];
-}
-
-export interface RequestUpdate {
-  id: string;
-  date: string;
-  text: string;
-  imageUrl?: string;
-}
-
-export interface Donation {
-  id: string;
-  requestId: string;
-  amount: number;
-  donorName: string;
-  date: string;
+  user_id: string;
+  titulo: string;
+  descricao: string;
+  valor_atual: number;
+  valor_meta: number;
+  data_limite: string;
+  status: StatusPedido;
+  score_confianca_ia: number;
+  url_prova_impacto?: string;
+  categoria: RequestCategory;
+  pix_key: string;
+  created_at: string;
+  updated_at: string;
+  profiles?: {
+    nome: string;
+    avatar_url: string;
+    avatar_seed: string;
+  };
 }

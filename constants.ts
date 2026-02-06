@@ -19,25 +19,28 @@ export const MOCK_USER: User = {
 export const INITIAL_REQUESTS: HelpRequest[] = [
   {
     id: 'r1',
-    userId: 'u2',
-    userName: 'João Souza',
-    title: 'Reforma do Telhado - Chuvas',
-    description: 'Com as últimas chuvas, nosso telhado cedeu. Precisamos de telhas e madeira.',
-    category: 'Reforma',
-    amountNeeded: 1500,
-    amountRaised: 450,
-    location: 'Jd. Ângela, São Paulo',
-    urgency: 'Alta',
-    status: 'Em Andamento',
-    imageUrl: 'https://picsum.photos/800/600?random=1',
-    pixKey: 'joao@pix.mock',
-    createdAt: new Date().toISOString(),
-    updates: []
+    user_id: 'u2',
+    titulo: 'Reforma do Telhado - Chuvas',
+    descricao: 'Com as últimas chuvas, nosso telhado cedeu. Precisamos de telhas e madeira.',
+    categoria: 'Reforma',
+    valor_meta: 1500,
+    valor_atual: 450,
+    status: 'PUBLICADO', // Fixed status from "Em Andamento"
+    pix_key: 'joao@pix.mock',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    data_limite: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+    score_confianca_ia: 85,
+    profiles: {
+      nome: 'João Souza',
+      avatar_url: 'https://picsum.photos/800/600?random=1',
+      avatar_seed: 'joao-seed'
+    }
   }
 ];
 
 export const APP_IMPACT_STATS = {
   familiesHelped: 1240,
   totalRaised: 450200,
-  activeVolunteers: 350
+  totalActions: 350 // Renamed from activeVolunteers to match globalImpact expectations
 };

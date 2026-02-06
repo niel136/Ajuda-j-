@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { User, Heart, Building2, ChevronRight } from 'lucide-react';
 import { UserRole } from '../types';

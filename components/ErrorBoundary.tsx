@@ -12,10 +12,14 @@ interface State {
   error?: Error;
 }
 
+// Added explicit constructor to ensure props and state are correctly initialized for TypeScript
 class ErrorBoundary extends Component<Props, State> {
-  public state: State = {
-    hasError: false
-  };
+  constructor(props: Props) {
+    super(props);
+    this.state = {
+      hasError: false
+    };
+  }
 
   public static getDerivedStateFromError(error: Error): State {
     return { hasError: true, error };
@@ -51,7 +55,7 @@ class ErrorBoundary extends Component<Props, State> {
       );
     }
 
-    // Fix: access children from this.props instead of this
+    // Fix: access children from this.props to ensure standard React component behavior
     return this.props.children;
   }
 }

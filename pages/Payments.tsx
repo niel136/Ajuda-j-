@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { ArrowLeft, CreditCard, History, Plus, DollarSign, CheckCircle2, Clock } from 'lucide-react';
 import Button from '../components/Button';

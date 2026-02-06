@@ -1,85 +1,53 @@
 
-import React from 'react';
-import { BrowserRouter as Router } from 'react-router-dom';
-import { Routes, Route, useLocation, Navigate } from 'react-router';
+import React, { Suspense, lazy } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AppProvider, useApp } from './context/AppContext';
 import { NotificationProvider } from './context/NotificationContext';
 import Layout from './components/Layout';
 import LoadingScreen from './components/LoadingScreen';
 import ErrorBoundary from './components/ErrorBoundary';
-import Home from './pages/Home';
-import Feed from './pages/Feed';
-import CreateRequest from './pages/CreateRequest';
-import Login from './pages/Login';
-import Signup from './pages/Signup';
-import AccountTypeSelection from './pages/AccountTypeSelection';
-import Admin from './pages/Admin';
-import Profile from './pages/Profile';
-import EditProfile from './pages/EditProfile';
-import InviteFriends from './pages/InviteFriends';
-import DonationHistory from './pages/DonationHistory';
-import Impact from './pages/Impact';
-import Payments from './pages/Payments';
-import Onboarding from './pages/Onboarding';
 
-const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, authChecked } = useApp();
-  const location = useLocation();
+// Lazy loading para reduzir bundle inicial e evitar quebras de importação no topo
+const Home = lazy(() => import('./pages/Home'));
+const Feed = lazy(() => import('./pages/Feed'));
+const CreateRequest = lazy(() => import('./pages/CreateRequest'));
+const Login = lazy(() => import('./pages/Login'));
+const Signup = lazy(() => import('./pages/Signup'));
+const AccountTypeSelection = lazy(() => import('./pages/AccountTypeSelection'));
+const Admin = lazy(() => import('./pages/Admin'));
+const Profile = lazy(() => import('./pages/Profile'));
+const EditProfile = lazy(() => import('./pages/EditProfile'));
+const InviteFriends = lazy(() => import('./pages/InviteFriends'));
+const DonationHistory = lazy(() => import('./pages/DonationHistory'));
+const Impact = lazy(() => import('./pages/Impact'));
+const Payments = lazy(() => import('./pages/Payments'));
+const Onboarding = lazy(() => import('./pages/Onboarding'));
 
-  if (!authChecked) {
-    return <LoadingScreen />;
-  }
-  
-  if (!user) {
-    return <Navigate to="/onboarding" state={{ from: location }} replace />;
-  }
-
-  return <>{children}</>;
-};
-
-const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, authChecked } = useApp();
-  
-  if (!authChecked) {
-    return <LoadingScreen />;
-  }
-  
-  if (user) {
-    return <Navigate to="/" replace />;
-  }
-  
-  return <>{children}</>;
-};
-
-const AppContent = () => {
-  const { authChecked } = useApp();
-
-  if (!authChecked) return <LoadingScreen />;
+const AppRoutes = () => {
+  const { user } = useApp();
 
   return (
-    <Layout>
-      <ErrorBoundary>
-        <Routes>
-          <Route path="/onboarding" element={<PublicRoute><Onboarding /></PublicRoute>} />
-          <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
-          <Route path="/signup" element={<PublicRoute><Signup /></PublicRoute>} />
-          <Route path="/tipo-conta" element={<PublicRoute><AccountTypeSelection /></PublicRoute>} />
+    <Suspense fallback={<LoadingScreen />}>
+      <Routes>
+        <Route path="/onboarding" element={user ? <Navigate to="/" /> : <Onboarding />} />
+        <Route path="/login" element={user ? <Navigate to="/" /> : <Login />} />
+        <Route path="/signup" element={user ? <Navigate to="/" /> : <Signup />} />
+        <Route path="/tipo-conta" element={user ? <Navigate to="/" /> : <AccountTypeSelection />} />
 
-          <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
-          <Route path="/feed" element={<ProtectedRoute><Feed /></ProtectedRoute>} />
-          <Route path="/novo-pedido" element={<ProtectedRoute><CreateRequest /></ProtectedRoute>} />
-          <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
-          <Route path="/perfil" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-          <Route path="/perfil/editar" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
-          <Route path="/convidar" element={<ProtectedRoute><InviteFriends /></ProtectedRoute>} />
-          <Route path="/historico" element={<ProtectedRoute><DonationHistory /></ProtectedRoute>} />
-          <Route path="/impacto" element={<ProtectedRoute><Impact /></ProtectedRoute>} />
-          <Route path="/pagamentos" element={<ProtectedRoute><Payments /></ProtectedRoute>} />
-          
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </ErrorBoundary>
-    </Layout>
+        <Route path="/" element={!user ? <Navigate to="/onboarding" /> : <Home />} />
+        <Route path="/feed" element={!user ? <Navigate to="/onboarding" /> : <Feed />} />
+        <Route path="/novo-pedido" element={!user ? <Navigate to="/onboarding" /> : <CreateRequest />} />
+        <Route path="/admin" element={!user ? <Navigate to="/onboarding" /> : <Admin />} />
+        <Route path="/perfil" element={!user ? <Navigate to="/onboarding" /> : <Profile />} />
+        <Route path="/perfil/editar" element={!user ? <Navigate to="/onboarding" /> : <EditProfile />} />
+        <Route path="/convidar" element={!user ? <Navigate to="/onboarding" /> : <InviteFriends />} />
+        <Route path="/historico" element={!user ? <Navigate to="/onboarding" /> : <DonationHistory />} />
+        <Route path="/impacto" element={!user ? <Navigate to="/onboarding" /> : <Impact />} />
+        <Route path="/pagamentos" element={!user ? <Navigate to="/onboarding" /> : <Payments />} />
+        
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </Suspense>
   );
 };
 
@@ -89,7 +57,9 @@ const App = () => {
       <NotificationProvider>
         <AppProvider>
           <Router>
-            <AppContent />
+            <Layout>
+              <AppRoutes />
+            </Layout>
           </Router>
         </AppProvider>
       </NotificationProvider>

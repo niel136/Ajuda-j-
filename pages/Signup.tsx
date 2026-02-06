@@ -1,7 +1,6 @@
 
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router';
-import { Link } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import Button from '../components/Button';
 import { ArrowLeft, User, Mail, Lock } from 'lucide-react';

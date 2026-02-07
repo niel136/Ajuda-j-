@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
-import { StatusPedido, HelpRequest, UserRole } from '../types';
+import { HelpRequest, UserRole } from '../types';
 import { APP_IMPACT_STATS, INITIAL_REQUESTS } from '../constants';
 
 interface AppContextType {
@@ -42,16 +42,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const hasInitialized = useRef(false);
 
   const fetchProfile = useCallback(async (userId: string) => {
-    if (!userId) return;
+    if (!userId || !supabase.from) return;
     try {
       const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single();
       if (!error && data) setProfile(data);
     } catch (e) {
-      console.warn('Profile fetch failed:', e);
+      console.warn('Fetch profile silent failure:', e);
     }
   }, []);
 
   const fetchRequests = useCallback(async () => {
+    if (!supabase.from) return;
     try {
       const { data, error } = await supabase
         .from('pedidos_ajuda')
@@ -59,32 +60,29 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         .order('created_at', { ascending: false });
       if (!error && data) setRequests(data);
     } catch (e) {
-      console.warn('Requests fetch failed:', e);
+      console.warn('Fetch requests silent failure:', e);
     }
   }, []);
 
-  // Efeito de inicialização resiliente
   useEffect(() => {
     if (hasInitialized.current) return;
     hasInitialized.current = true;
 
-    // Timeout de segurança: Se o Supabase demorar mais de 3s, liberamos a tela
-    const safetyTimer = setTimeout(() => {
-      if (!authChecked) setAuthChecked(true);
-    }, 3000);
+    let isMounted = true;
 
     const initAuth = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user) {
-          setUser(session.user);
-          await fetchProfile(session.user.id);
+        if (isMounted) {
+          if (session?.user) {
+            setUser(session.user);
+            await fetchProfile(session.user.id);
+          }
+          setAuthChecked(true);
         }
       } catch (e) {
-        console.error("Auth init error:", e);
-      } finally {
-        setAuthChecked(true);
-        clearTimeout(safetyTimer);
+        console.error("Auth initialization error:", e);
+        if (isMounted) setAuthChecked(true);
       }
       fetchRequests();
     };
@@ -92,6 +90,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     initAuth();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: any, session: any) => {
+      if (!isMounted) return;
       const currentUser = session?.user || null;
       setUser(currentUser);
       if (currentUser) {
@@ -102,8 +101,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     });
 
     return () => {
+      isMounted = false;
       subscription?.unsubscribe();
-      clearTimeout(safetyTimer);
     };
   }, [fetchProfile, fetchRequests]);
 
@@ -154,12 +153,32 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const updateUserRole = async (role: UserRole) => { if (user) await supabase.from('profiles').upsert({ id: user.id, tipo_conta: role }); };
   const fetchDonations = async () => {};
   const refreshProfile = async () => { if (user?.id) fetchProfile(user.id); };
-  const submitForAnalysis = async (id: string) => {};
-  const moderateRequest = async (id: string, decision: string) => {};
-  const processDonation = async (id: string, amount: number) => {};
-  const releaseFunds = async (id: string) => {};
-  const submitProof = async (id: string, url: string) => {};
-  const updateProfile = async (updates: any) => { if (user) await supabase.from('profiles').upsert({ ...updates, id: user.id }); refreshProfile(); };
+  const submitForAnalysis = async (id: string) => {
+    await supabase.from('pedidos_ajuda').update({ status: 'EM_ANALISE' }).eq('id', id);
+    fetchRequests();
+  };
+  const moderateRequest = async (id: string, decision: string) => {
+    const status = decision === 'APROVAR' ? 'PUBLICADO' : (decision === 'NEGAR' ? 'NEGADO' : 'FALTA_INFO');
+    await supabase.from('pedidos_ajuda').update({ status }).eq('id', id);
+    fetchRequests();
+  };
+  const processDonation = async (id: string, amount: number) => {
+    if (!user) return;
+    await supabase.from('doacoes').insert({ user_id: user.id, pedido_id: id, valor: amount });
+    fetchRequests();
+  };
+  const releaseFunds = async (id: string) => {
+    await supabase.from('pedidos_ajuda').update({ status: 'AGUARDANDO_PROVA' }).eq('id', id);
+    fetchRequests();
+  };
+  const submitProof = async (id: string, url: string) => {
+    await supabase.from('pedidos_ajuda').update({ url_prova_impacto: url, status: 'CONCLUIDO' }).eq('id', id);
+    fetchRequests();
+  };
+  const updateProfile = async (updates: any) => { 
+    if (user) await supabase.from('profiles').upsert({ ...updates, id: user.id }); 
+    refreshProfile(); 
+  };
 
   return (
     <AppContext.Provider value={{ 

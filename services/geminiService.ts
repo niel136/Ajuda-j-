@@ -1,13 +1,24 @@
 
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenAI } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Função para obter o cliente AI de forma segura apenas quando necessário
+const getAIClient = () => {
+  const apiKey = process.env.API_KEY;
+  if (!apiKey) {
+    console.warn('Gemini API Key não encontrada no ambiente.');
+    return null;
+  }
+  return new GoogleGenAI({ apiKey });
+};
 
 export const analyzeRequestConfidence = async (
   title: string,
   description: string
 ): Promise<number> => {
   try {
+    const ai = getAIClient();
+    if (!ai) return 50;
+
     const prompt = `Analise a veracidade e clareza deste pedido de ajuda:
     Título: ${title}
     Descrição: ${description}
@@ -20,10 +31,12 @@ export const analyzeRequestConfidence = async (
       contents: prompt,
     });
 
-    const score = parseInt(response.text?.replace(/\D/g, '') || "50");
+    const scoreStr = response.text?.replace(/\D/g, '') || "50";
+    const score = parseInt(scoreStr);
     return isNaN(score) ? 50 : score;
   } catch (error) {
-    return 50; // Fallback seguro
+    console.error('Erro ao analisar confiança com Gemini:', error);
+    return 50; 
   }
 };
 
@@ -32,6 +45,9 @@ export const enhanceDescription = async (
   category: string
 ): Promise<string> => {
   try {
+    const ai = getAIClient();
+    if (!ai) return rawText;
+
     const prompt = `
       Melhore o seguinte texto de um pedido de ajuda na categoria "${category}".
       Texto: "${rawText}".
@@ -45,6 +61,7 @@ export const enhanceDescription = async (
 
     return response.text || rawText;
   } catch (error) {
+    console.error('Erro ao melhorar descrição com Gemini:', error);
     return rawText;
   }
 };

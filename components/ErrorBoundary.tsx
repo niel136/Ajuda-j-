@@ -1,10 +1,10 @@
 
-import React, { ErrorInfo, ReactNode } from 'react';
+import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 import Button from './Button';
 
 interface Props {
-  // Fix: Made children optional to ensure compatibility with JSX usage and satisfy TS strict prop checking
+  // Made children optional to ensure compatibility with JSX usage and satisfy TS strict prop checking
   children?: ReactNode;
 }
 
@@ -13,11 +13,11 @@ interface State {
   error?: Error;
 }
 
-// Fix: Explicitly extending React.Component<Props, State> to ensure the class is correctly recognized as a React component with valid state and props properties
-class ErrorBoundary extends React.Component<Props, State> {
+// Fixed: Inheriting from Component instead of React.Component can help resolve type inference issues in certain environments
+class ErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
     super(props);
-    // Fix: Initializing state correctly within the constructor context
+    // Initializing state correctly within the constructor context
     this.state = {
       hasError: false
     };
@@ -32,7 +32,7 @@ class ErrorBoundary extends React.Component<Props, State> {
   }
 
   public render() {
-    // Fix: Correctly accessing state via this.state
+    // Correctly accessing state via this.state
     if (this.state.hasError) {
       return (
         <div className="min-h-screen bg-[#F8FAF5] flex flex-col items-center justify-center p-8 text-center">
@@ -58,7 +58,7 @@ class ErrorBoundary extends React.Component<Props, State> {
       );
     }
 
-    // Fix: Correctly accessing props via this.props
+    // Correctly accessing props via this.props
     return this.props.children;
   }
 }

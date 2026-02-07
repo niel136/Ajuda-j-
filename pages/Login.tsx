@@ -9,7 +9,7 @@ const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const { login, isLoading } = useApp();
+  const { login, loginWithGoogle, isLoading } = useApp();
   const navigate = useNavigate();
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -17,7 +17,6 @@ const Login: React.FC = () => {
     setError('');
     try {
       await login(email, password);
-      // Redirecionamento forçado imediato
       window.location.href = '/';
     } catch (err: any) {
       setError(err.message || 'Erro ao entrar. Verifique seus dados.');
@@ -36,6 +35,31 @@ const Login: React.FC = () => {
         <h2 className="text-4xl font-extrabold text-black tracking-tighter leading-none">Bem-vindo<br/>de volta</h2>
         <p className="text-gray-400 font-bold mt-3 text-sm uppercase tracking-widest">Acesse sua conta AjudaJá</p>
       </header>
+
+      <div className="flex flex-col gap-4">
+        <Button 
+          variant="outline" 
+          fullWidth 
+          size="lg" 
+          className="bg-white border-black/5 shadow-sm flex items-center gap-3 h-16 rounded-[2rem]"
+          onClick={loginWithGoogle}
+          isLoading={isLoading}
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M23.5 12.2c0-.8-.1-1.6-.2-2.3H12v4.4h6.5c-.3 1.5-1.1 2.7-2.4 3.6v3h3.8c2.2-2.1 3.6-5.2 3.6-8.7z" fill="#4285F4"/>
+            <path d="M12 24c3.2 0 6-1.1 8-2.9l-3.8-3c-1.1.8-2.6 1.2-4.2 1.2-3.2 0-6-2.2-7-5.2H1.1v3.1C3.1 21.4 7.2 24 12 24z" fill="#34A853"/>
+            <path d="M5 14.1c-.2-.7-.4-1.4-.4-2.1s.1-1.4.4-2.1V6.8H1.1C.4 8.4 0 10.2 0 12s.4 3.6 1.1 5.2l3.9-3.1z" fill="#FBBC05"/>
+            <path d="M12 4.8c1.8 0 3.3.6 4.6 1.8l3.4-3.4C17.9 1.1 15.2 0 12 0 7.2 0 3.1 2.6 1.1 6.8l3.9 3.1c1-3 3.8-5.1 7-5.1z" fill="#EA4335"/>
+          </svg>
+          Continuar com Google
+        </Button>
+
+        <div className="flex items-center gap-4 my-4">
+          <div className="flex-1 h-[1px] bg-black/5"></div>
+          <span className="text-[10px] font-black text-gray-300 uppercase tracking-widest">ou e-mail</span>
+          <div className="flex-1 h-[1px] bg-black/5"></div>
+        </div>
+      </div>
 
       <form onSubmit={handleLogin} className="space-y-6 flex-1">
         {error && (
@@ -80,7 +104,7 @@ const Login: React.FC = () => {
             </Button>
         </div>
 
-        <div className="text-center pt-4">
+        <div className="text-center pt-4 pb-10">
             <p className="text-gray-400 font-bold text-sm">
                 Ainda não tem conta? <Link to="/tipo-conta" className="text-black underline decoration-2">Cadastre-se</Link>
             </p>

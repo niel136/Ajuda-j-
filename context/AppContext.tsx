@@ -12,6 +12,7 @@ interface AppContextType {
   isLoading: boolean;
   authChecked: boolean;
   login: (email: string, pass: string) => Promise<void>;
+  loginWithGoogle: () => Promise<void>;
   register: (email: string, pass: string, name: string, role: string) => Promise<void>;
   logout: () => Promise<void>;
   saveRequest: (request: any) => Promise<void>;
@@ -20,7 +21,6 @@ interface AppContextType {
   trackFeatureClick: (feature: string) => void;
   updateUserRole: (role: UserRole) => Promise<void>;
   globalImpact: { familiesHelped: number; totalRaised: number; totalActions: number; };
-  // Fixed: Added missing properties to AppContextType
   fetchDonations: () => Promise<void>;
   processDonation: (requestId: string, amount: number) => Promise<void>;
   submitForAnalysis: (requestId: string) => Promise<void>;
@@ -64,7 +64,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   }, []);
 
-  // Fixed: Implemented fetchDonations
   const fetchDonations = useCallback(async () => {
     if (!user) return;
     setIsLoading(true);
@@ -128,6 +127,21 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
+  const loginWithGoogle = async () => {
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: 'https://ajuda-ja.vercel.app'
+        }
+      });
+      if (error) throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const register = async (e: string, p: string, n: string, r: string) => {
     setIsLoading(true);
     try {
@@ -160,7 +174,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const saveRequest = async (data: any) => {
     if (!user) throw new Error("Ação requer login");
-    // Mudança Crítica: Status agora é PUBLICADO imediatamente
     const { error } = await supabase.from('pedidos_ajuda').insert({ 
       ...data, 
       user_id: user.id, 
@@ -187,7 +200,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     refreshProfile(); 
   };
 
-  // Fixed: Implemented processDonation
   const processDonation = async (requestId: string, amount: number) => {
     if (!user) throw new Error("Ação requer login");
     
@@ -217,21 +229,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     refreshProfile();
   };
 
-  // Fixed: Implemented submitForAnalysis
   const submitForAnalysis = async (requestId: string) => {
     const { error } = await supabase.from('pedidos_ajuda').update({ status: 'EM_ANALISE' }).eq('id', requestId);
     if (error) throw error;
     fetchRequests();
   };
 
-  // Fixed: Implemented releaseFunds
   const releaseFunds = async (requestId: string) => {
     const { error } = await supabase.from('pedidos_ajuda').update({ status: 'AGUARDANDO_PROVA' }).eq('id', requestId);
     if (error) throw error;
     fetchRequests();
   };
 
-  // Fixed: Implemented submitProof
   const submitProof = async (requestId: string, proofUrl: string) => {
     const { error } = await supabase.from('pedidos_ajuda').update({ 
       status: 'CONCLUIDO',
@@ -241,7 +250,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     fetchRequests();
   };
 
-  // Fixed: Implemented moderateRequest
   const moderateRequest = async (requestId: string, action: 'APROVAR' | 'NEGAR' | 'INFO') => {
     let newStatus: StatusPedido = 'PUBLICADO';
     if (action === 'NEGAR') newStatus = 'NEGADO';
@@ -255,7 +263,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   return (
     <AppContext.Provider value={{ 
       user, profile, requests, donations, isLoading, authChecked, 
-      login, register, logout, saveRequest, 
+      login, loginWithGoogle, register, logout, saveRequest, 
       updateProfile, refreshProfile, trackFeatureClick, updateUserRole,
       globalImpact,
       fetchDonations, processDonation, submitForAnalysis, releaseFunds, submitProof, moderateRequest

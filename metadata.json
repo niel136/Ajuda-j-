@@ -2,6 +2,7 @@
   "name": "AjudaJá",
   "description": "Conectando doadores a quem precisa com urgência e transparência.",
   "requestFramePermissions": [
-    "camera"
+    "camera",
+    "microphone"
   ]
 }

@@ -18,9 +18,9 @@ const Signup: React.FC = () => {
     e.preventDefault();
     setError('');
     try {
-      const role = localStorage.getItem('ajudaJa_pending_role') || 'donor';
-      await register(email, password, name, role);
-      navigate('/');
+      // Por padrão, começa como doador, o tipo é alterado na tela 'tipo-conta' após o welcome
+      await register(email, password, name, 'donor');
+      navigate('/welcome');
     } catch (err: any) {
       setError(err.message || 'Erro ao criar conta.');
     }
@@ -29,15 +29,15 @@ const Signup: React.FC = () => {
   return (
     <div className="min-h-[100dvh] bg-[#F8FAF5] p-8 flex flex-col pt-safe">
       <header className="mb-10">
-        <button onClick={() => navigate('/tipo-conta')} className="w-14 h-14 flex items-center justify-center bg-white rounded-2xl shadow-sm mb-10 border border-black/5">
+        <button onClick={() => navigate('/onboarding')} className="w-14 h-14 flex items-center justify-center bg-white rounded-2xl shadow-sm mb-10 border border-black/5">
             <ArrowLeft size={28} />
         </button>
         <h2 className="text-4xl font-extrabold text-black tracking-tighter leading-none">Criar sua<br/>Conta</h2>
-        <p className="text-gray-400 font-bold mt-3 text-sm uppercase tracking-widest">Rápido e Seguro</p>
+        <p className="text-gray-400 font-bold mt-3 text-sm uppercase tracking-widest">Sua jornada começa aqui</p>
       </header>
 
       <form onSubmit={handleSignup} className="space-y-6 flex-1 animate-app-in">
-        {error && <div className="p-4 bg-red-50 text-red-500 rounded-2xl text-xs font-bold">{error}</div>}
+        {error && <div className="p-4 bg-red-50 text-red-500 rounded-2xl text-xs font-bold border border-red-100">{error}</div>}
         
         <div className="space-y-2">
            <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest ml-1">Nome Completo</label>

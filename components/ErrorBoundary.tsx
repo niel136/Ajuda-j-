@@ -1,10 +1,11 @@
 
-import React, { Component, ErrorInfo, ReactNode } from 'react';
+import React, { ErrorInfo, ReactNode } from 'react';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 import Button from './Button';
 
 interface Props {
-  children: ReactNode;
+  // Fix: Made children optional to ensure compatibility with JSX usage and satisfy TS strict prop checking
+  children?: ReactNode;
 }
 
 interface State {
@@ -12,10 +13,11 @@ interface State {
   error?: Error;
 }
 
-// Added explicit constructor to ensure props and state are correctly initialized for TypeScript
-class ErrorBoundary extends Component<Props, State> {
+// Fix: Explicitly extending React.Component<Props, State> to ensure the class is correctly recognized as a React component with valid state and props properties
+class ErrorBoundary extends React.Component<Props, State> {
   constructor(props: Props) {
     super(props);
+    // Fix: Initializing state correctly within the constructor context
     this.state = {
       hasError: false
     };
@@ -30,6 +32,7 @@ class ErrorBoundary extends Component<Props, State> {
   }
 
   public render() {
+    // Fix: Correctly accessing state via this.state
     if (this.state.hasError) {
       return (
         <div className="min-h-screen bg-[#F8FAF5] flex flex-col items-center justify-center p-8 text-center">
@@ -55,7 +58,7 @@ class ErrorBoundary extends Component<Props, State> {
       );
     }
 
-    // Fix: access children from this.props to ensure standard React component behavior
+    // Fix: Correctly accessing props via this.props
     return this.props.children;
   }
 }

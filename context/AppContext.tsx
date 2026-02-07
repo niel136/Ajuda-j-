@@ -14,17 +14,11 @@ interface AppContextType {
   login: (email: string, pass: string) => Promise<void>;
   register: (email: string, pass: string, name: string, role: string) => Promise<void>;
   logout: () => Promise<void>;
-  saveDraft: (request: any) => Promise<void>;
-  submitForAnalysis: (requestId: string) => Promise<void>;
-  moderateRequest: (requestId: string, decision: 'APROVAR' | 'NEGAR' | 'INFO') => Promise<void>;
-  processDonation: (requestId: string, amount: number) => Promise<void>;
-  releaseFunds: (requestId: string) => Promise<void>;
-  submitProof: (requestId: string, url: string) => Promise<void>;
+  saveRequest: (request: any) => Promise<void>;
   updateProfile: (updates: any) => Promise<void>;
   refreshProfile: () => Promise<void>;
   trackFeatureClick: (feature: string) => void;
   updateUserRole: (role: UserRole) => Promise<void>;
-  fetchDonations: () => Promise<void>;
   globalImpact: { familiesHelped: number; totalRaised: number; totalActions: number; };
 }
 
@@ -42,17 +36,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const hasInitialized = useRef(false);
 
   const fetchProfile = useCallback(async (userId: string) => {
-    if (!userId || !supabase.from) return;
+    if (!userId) return;
     try {
       const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single();
       if (!error && data) setProfile(data);
     } catch (e) {
-      console.warn('Fetch profile silent failure:', e);
+      console.warn('Profile fetch failed:', e);
     }
   }, []);
 
   const fetchRequests = useCallback(async () => {
-    if (!supabase.from) return;
     try {
       const { data, error } = await supabase
         .from('pedidos_ajuda')
@@ -60,7 +53,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         .order('created_at', { ascending: false });
       if (!error && data) setRequests(data);
     } catch (e) {
-      console.warn('Fetch requests silent failure:', e);
+      console.warn('Requests fetch failed:', e);
     }
   }, []);
 
@@ -68,21 +61,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     if (hasInitialized.current) return;
     hasInitialized.current = true;
 
-    let isMounted = true;
-
     const initAuth = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        if (isMounted) {
-          if (session?.user) {
-            setUser(session.user);
-            await fetchProfile(session.user.id);
-          }
-          setAuthChecked(true);
+        if (session?.user) {
+          setUser(session.user);
+          await fetchProfile(session.user.id);
         }
       } catch (e) {
-        console.error("Auth initialization error:", e);
-        if (isMounted) setAuthChecked(true);
+        console.error("Auth init error:", e);
+      } finally {
+        setAuthChecked(true);
       }
       fetchRequests();
     };
@@ -90,7 +79,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     initAuth();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: any, session: any) => {
-      if (!isMounted) return;
       const currentUser = session?.user || null;
       setUser(currentUser);
       if (currentUser) {
@@ -101,7 +89,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     });
 
     return () => {
-      isMounted = false;
       subscription?.unsubscribe();
     };
   }, [fetchProfile, fetchRequests]);
@@ -123,7 +110,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       if (error) throw error;
       if (data.user) {
         await supabase.from('profiles').upsert({
-          id: data.user.id, nome: n, tipo_conta: r, avatar_seed: Math.random().toString(36).substring(7)
+          id: data.user.id, 
+          nome: n, 
+          tipo_conta: r, 
+          avatar_seed: Math.random().toString(36).substring(7),
+          created_at: new Date().toISOString()
         });
       }
     } finally {
@@ -142,51 +133,40 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
-  const saveDraft = async (data: any) => {
+  const saveRequest = async (data: any) => {
     if (!user) throw new Error("Ação requer login");
-    const { error } = await supabase.from('pedidos_ajuda').upsert({ ...data, user_id: user.id, status: 'RASCUNHO' });
+    const { error } = await supabase.from('pedidos_ajuda').insert({ 
+      ...data, 
+      user_id: user.id, 
+      status: 'EM_ANALISE',
+      created_at: new Date().toISOString()
+    });
     if (error) throw error;
     fetchRequests();
   };
 
   const trackFeatureClick = (f: string) => console.debug(`[Click] ${f}`);
-  const updateUserRole = async (role: UserRole) => { if (user) await supabase.from('profiles').upsert({ id: user.id, tipo_conta: role }); };
-  const fetchDonations = async () => {};
+  
+  const updateUserRole = async (role: UserRole) => { 
+    if (user) {
+      await supabase.from('profiles').update({ tipo_conta: role }).eq('id', user.id); 
+      await fetchProfile(user.id);
+    }
+  };
+
   const refreshProfile = async () => { if (user?.id) fetchProfile(user.id); };
-  const submitForAnalysis = async (id: string) => {
-    await supabase.from('pedidos_ajuda').update({ status: 'EM_ANALISE' }).eq('id', id);
-    fetchRequests();
-  };
-  const moderateRequest = async (id: string, decision: string) => {
-    const status = decision === 'APROVAR' ? 'PUBLICADO' : (decision === 'NEGAR' ? 'NEGADO' : 'FALTA_INFO');
-    await supabase.from('pedidos_ajuda').update({ status }).eq('id', id);
-    fetchRequests();
-  };
-  const processDonation = async (id: string, amount: number) => {
-    if (!user) return;
-    await supabase.from('doacoes').insert({ user_id: user.id, pedido_id: id, valor: amount });
-    fetchRequests();
-  };
-  const releaseFunds = async (id: string) => {
-    await supabase.from('pedidos_ajuda').update({ status: 'AGUARDANDO_PROVA' }).eq('id', id);
-    fetchRequests();
-  };
-  const submitProof = async (id: string, url: string) => {
-    await supabase.from('pedidos_ajuda').update({ url_prova_impacto: url, status: 'CONCLUIDO' }).eq('id', id);
-    fetchRequests();
-  };
+  
   const updateProfile = async (updates: any) => { 
-    if (user) await supabase.from('profiles').upsert({ ...updates, id: user.id }); 
+    if (user) await supabase.from('profiles').update(updates).eq('id', user.id); 
     refreshProfile(); 
   };
 
   return (
     <AppContext.Provider value={{ 
       user, profile, requests, donations, isLoading, authChecked, 
-      login, register, logout, saveDraft, submitForAnalysis, 
-      moderateRequest, processDonation, releaseFunds, submitProof,
+      login, register, logout, saveRequest, 
       updateProfile, refreshProfile, trackFeatureClick, updateUserRole,
-      fetchDonations, globalImpact
+      globalImpact
     }}>
       {children}
     </AppContext.Provider>

@@ -23,7 +23,7 @@ const Onboarding = () => {
             Ajuda Rápida <br/>e Real.
           </h1>
           <p className="text-gray-500 font-medium text-lg leading-snug">
-            Conectamos quem precisa de ajuda with quem quer ajudar, de forma direta e segura.
+            Conectamos quem precisa de ajuda com quem quer ajudar, de forma direta e segura.
           </p>
         </section>
 
@@ -40,7 +40,7 @@ const Onboarding = () => {
             fullWidth 
             size="lg" 
             variant="primary" 
-            onClick={() => navigate('/login')} 
+            onClick={() => navigate('/signup')} 
             className="h-16 text-lg rounded-full"
           >
             Começar agora

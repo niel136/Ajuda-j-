@@ -7,13 +7,13 @@ import Layout from './components/Layout';
 import LoadingScreen from './components/LoadingScreen';
 import ErrorBoundary from './components/ErrorBoundary';
 
-// Lazy loading otimizado
 const Home = lazy(() => import('./pages/Home'));
 const Feed = lazy(() => import('./pages/Feed'));
 const CreateRequest = lazy(() => import('./pages/CreateRequest'));
 const Login = lazy(() => import('./pages/Login'));
 const Signup = lazy(() => import('./pages/Signup'));
 const AccountTypeSelection = lazy(() => import('./pages/AccountTypeSelection'));
+const Welcome = lazy(() => import('./pages/Welcome'));
 const Admin = lazy(() => import('./pages/Admin'));
 const Profile = lazy(() => import('./pages/Profile'));
 const EditProfile = lazy(() => import('./pages/EditProfile'));
@@ -26,19 +26,17 @@ const Onboarding = lazy(() => import('./pages/Onboarding'));
 const AppRoutes = () => {
   const { user, authChecked } = useApp();
 
-  // Enquanto o auth essencial não termina, mostramos o loading mas NÃO bloqueamos a árvore permanentemente
   if (!authChecked) return <LoadingScreen />;
 
   return (
     <Suspense fallback={<LoadingScreen />}>
       <Routes>
-        {/* Rotas Públicas */}
         <Route path="/onboarding" element={user ? <Navigate to="/" replace /> : <Onboarding />} />
         <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />
         <Route path="/signup" element={user ? <Navigate to="/" replace /> : <Signup />} />
-        <Route path="/tipo-conta" element={user ? <Navigate to="/" replace /> : <AccountTypeSelection />} />
+        <Route path="/welcome" element={!user ? <Navigate to="/onboarding" replace /> : <Welcome />} />
+        <Route path="/tipo-conta" element={!user ? <Navigate to="/onboarding" replace /> : <AccountTypeSelection />} />
 
-        {/* Rotas Protegidas */}
         <Route path="/" element={!user ? <Navigate to="/onboarding" replace /> : <Home />} />
         <Route path="/feed" element={!user ? <Navigate to="/onboarding" replace /> : <Feed />} />
         <Route path="/novo-pedido" element={!user ? <Navigate to="/onboarding" replace /> : <CreateRequest />} />
@@ -50,7 +48,6 @@ const AppRoutes = () => {
         <Route path="/impacto" element={!user ? <Navigate to="/onboarding" replace /> : <Impact />} />
         <Route path="/pagamentos" element={!user ? <Navigate to="/onboarding" replace /> : <Payments />} />
         
-        {/* Wildcard - Redireciona qualquer erro 404 para a home */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Suspense>

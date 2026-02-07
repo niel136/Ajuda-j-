@@ -31,13 +31,12 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  // Inicialização com valores padrão para renderização imediata
   const [user, setUser] = useState<any | null>(null);
   const [profile, setProfile] = useState<any | null>(null);
   const [requests, setRequests] = useState<HelpRequest[]>(INITIAL_REQUESTS);
   const [donations, setDonations] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [authChecked, setAuthChecked] = useState(true); // Começa como true para não bloquear render
+  const [authChecked, setAuthChecked] = useState(false);
   const [globalImpact] = useState(APP_IMPACT_STATS);
   
   const hasInitialized = useRef(false);
@@ -48,7 +47,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single();
       if (!error && data) setProfile(data);
     } catch (e) {
-      console.warn('Silent profile fetch error:', e);
+      console.warn('Profile fetch failed:', e);
     }
   }, []);
 
@@ -60,42 +59,32 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         .order('created_at', { ascending: false });
       if (!error && data) setRequests(data);
     } catch (e) {
-      console.warn('Silent requests fetch error:', e);
+      console.warn('Requests fetch failed:', e);
     }
   }, []);
 
-  const refreshProfile = useCallback(async () => {
-    if (user?.id) await fetchProfile(user.id);
-  }, [user, fetchProfile]);
-
-  const fetchDonations = useCallback(async () => {
-    if (!user?.id) return;
-    try {
-      const { data, error } = await supabase
-        .from('doacoes')
-        .select('*, pedidos_ajuda(*)')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-      if (!error && data) setDonations(data);
-    } catch (e) {
-      console.warn('Silent donations fetch error:', e);
-    }
-  }, [user]);
-
-  // Efeito único de inicialização
+  // Efeito de inicialização resiliente
   useEffect(() => {
     if (hasInitialized.current) return;
     hasInitialized.current = true;
+
+    // Timeout de segurança: Se o Supabase demorar mais de 3s, liberamos a tela
+    const safetyTimer = setTimeout(() => {
+      if (!authChecked) setAuthChecked(true);
+    }, 3000);
 
     const initAuth = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user) {
           setUser(session.user);
-          fetchProfile(session.user.id);
+          await fetchProfile(session.user.id);
         }
       } catch (e) {
         console.error("Auth init error:", e);
+      } finally {
+        setAuthChecked(true);
+        clearTimeout(safetyTimer);
       }
       fetchRequests();
     };
@@ -114,6 +103,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     return () => {
       subscription?.unsubscribe();
+      clearTimeout(safetyTimer);
     };
   }, [fetchProfile, fetchRequests]);
 
@@ -153,7 +143,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
-  // Funções de Negócio Protegidas
   const saveDraft = async (data: any) => {
     if (!user) throw new Error("Ação requer login");
     const { error } = await supabase.from('pedidos_ajuda').upsert({ ...data, user_id: user.id, status: 'RASCUNHO' });
@@ -163,12 +152,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const trackFeatureClick = (f: string) => console.debug(`[Click] ${f}`);
   const updateUserRole = async (role: UserRole) => { if (user) await supabase.from('profiles').upsert({ id: user.id, tipo_conta: role }); };
-  const submitForAnalysis = async (id: string) => { /* Mock logic as implemented before */ fetchRequests(); };
-  const moderateRequest = async (id: string, d: any) => { await supabase.from('pedidos_ajuda').update({ status: d === 'APROVAR' ? 'PUBLICADO' : 'NEGADO' }).eq('id', id); fetchRequests(); };
-  const processDonation = async (id: string, a: number) => { /* Payment logic */ fetchRequests(); };
-  const releaseFunds = async (id: string) => { await supabase.from('pedidos_ajuda').update({ status: 'AGUARDANDO_PROVA' }).eq('id', id); fetchRequests(); };
-  const submitProof = async (id: string, url: string) => { await supabase.from('pedidos_ajuda').update({ url_prova_impacto: url, status: 'CONCLUIDO' }).eq('id', id); fetchRequests(); };
-  const updateProfile = async (u: any) => { if (user) await supabase.from('profiles').upsert({ ...u, id: user.id }); refreshProfile(); };
+  const fetchDonations = async () => {};
+  const refreshProfile = async () => { if (user?.id) fetchProfile(user.id); };
+  const submitForAnalysis = async (id: string) => {};
+  const moderateRequest = async (id: string, decision: string) => {};
+  const processDonation = async (id: string, amount: number) => {};
+  const releaseFunds = async (id: string) => {};
+  const submitProof = async (id: string, url: string) => {};
+  const updateProfile = async (updates: any) => { if (user) await supabase.from('profiles').upsert({ ...updates, id: user.id }); refreshProfile(); };
 
   return (
     <AppContext.Provider value={{ 

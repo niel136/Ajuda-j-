@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
-import { HelpRequest, UserRole } from '../types';
+import { HelpRequest, UserRole, StatusPedido } from '../types';
 import { APP_IMPACT_STATS, INITIAL_REQUESTS } from '../constants';
 
 interface AppContextType {
@@ -20,6 +20,13 @@ interface AppContextType {
   trackFeatureClick: (feature: string) => void;
   updateUserRole: (role: UserRole) => Promise<void>;
   globalImpact: { familiesHelped: number; totalRaised: number; totalActions: number; };
+  // Fixed: Added missing properties to AppContextType
+  fetchDonations: () => Promise<void>;
+  processDonation: (requestId: string, amount: number) => Promise<void>;
+  submitForAnalysis: (requestId: string) => Promise<void>;
+  releaseFunds: (requestId: string) => Promise<void>;
+  submitProof: (requestId: string, proofUrl: string) => Promise<void>;
+  moderateRequest: (requestId: string, action: 'APROVAR' | 'NEGAR' | 'INFO') => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -56,6 +63,24 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       console.warn('Requests fetch failed:', e);
     }
   }, []);
+
+  // Fixed: Implemented fetchDonations
+  const fetchDonations = useCallback(async () => {
+    if (!user) return;
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('doacoes')
+        .select('*, pedidos_ajuda(titulo)')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+      if (!error && data) setDonations(data || []);
+    } catch (e) {
+      console.warn('Donations fetch failed:', e);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [user]);
 
   useEffect(() => {
     if (hasInitialized.current) return;
@@ -135,10 +160,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const saveRequest = async (data: any) => {
     if (!user) throw new Error("Ação requer login");
+    // Mudança Crítica: Status agora é PUBLICADO imediatamente
     const { error } = await supabase.from('pedidos_ajuda').insert({ 
       ...data, 
       user_id: user.id, 
-      status: 'EM_ANALISE',
+      status: 'PUBLICADO', 
       created_at: new Date().toISOString()
     });
     if (error) throw error;
@@ -161,12 +187,78 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     refreshProfile(); 
   };
 
+  // Fixed: Implemented processDonation
+  const processDonation = async (requestId: string, amount: number) => {
+    if (!user) throw new Error("Ação requer login");
+    
+    const { error: donationError } = await supabase.from('doacoes').insert({
+      user_id: user.id,
+      pedido_id: requestId,
+      valor: amount,
+      created_at: new Date().toISOString()
+    });
+    if (donationError) throw donationError;
+
+    const request = requests.find(r => r.id === requestId);
+    if (request) {
+      const newVal = (request.valor_atual || 0) + amount;
+      let newStatus = request.status;
+      if (newVal >= request.valor_meta) {
+        newStatus = 'META_BATIDA';
+      }
+      await supabase.from('pedidos_ajuda').update({ 
+        valor_atual: newVal,
+        status: newStatus
+      }).eq('id', requestId);
+    }
+
+    fetchRequests();
+    fetchDonations();
+    refreshProfile();
+  };
+
+  // Fixed: Implemented submitForAnalysis
+  const submitForAnalysis = async (requestId: string) => {
+    const { error } = await supabase.from('pedidos_ajuda').update({ status: 'EM_ANALISE' }).eq('id', requestId);
+    if (error) throw error;
+    fetchRequests();
+  };
+
+  // Fixed: Implemented releaseFunds
+  const releaseFunds = async (requestId: string) => {
+    const { error } = await supabase.from('pedidos_ajuda').update({ status: 'AGUARDANDO_PROVA' }).eq('id', requestId);
+    if (error) throw error;
+    fetchRequests();
+  };
+
+  // Fixed: Implemented submitProof
+  const submitProof = async (requestId: string, proofUrl: string) => {
+    const { error } = await supabase.from('pedidos_ajuda').update({ 
+      status: 'CONCLUIDO',
+      url_prova_impacto: proofUrl
+    }).eq('id', requestId);
+    if (error) throw error;
+    fetchRequests();
+  };
+
+  // Fixed: Implemented moderateRequest
+  const moderateRequest = async (requestId: string, action: 'APROVAR' | 'NEGAR' | 'INFO') => {
+    let newStatus: StatusPedido = 'PUBLICADO';
+    if (action === 'NEGAR') newStatus = 'NEGADO';
+    if (action === 'INFO') newStatus = 'FALTA_INFO';
+    
+    const { error } = await supabase.from('pedidos_ajuda').update({ status: newStatus }).eq('id', requestId);
+    if (error) throw error;
+    fetchRequests();
+  };
+
   return (
     <AppContext.Provider value={{ 
       user, profile, requests, donations, isLoading, authChecked, 
       login, register, logout, saveRequest, 
       updateProfile, refreshProfile, trackFeatureClick, updateUserRole,
-      globalImpact
+      globalImpact,
+      fetchDonations, processDonation, submitForAnalysis, releaseFunds, submitProof, moderateRequest
     }}>
       {children}
     </AppContext.Provider>

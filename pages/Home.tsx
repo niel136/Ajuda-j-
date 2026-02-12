@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowUpRight, Heart, PlusCircle, Settings, TrendingUp } from 'lucide-react';
+import { Heart, PlusCircle, Settings, Zap, Users, ShieldCheck } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import RequestCard from '../components/RequestCard';
 import MascotAvatar from '../components/MascotAvatar';
@@ -10,99 +10,86 @@ const Home: React.FC = () => {
   const { user, profile, requests } = useApp();
   
   const firstName = profile?.nome?.split(' ')[0] || user?.email?.split('@')[0] || 'Visitante';
-  const roleLabel = profile?.tipo_conta === 'donor' ? 'Doador Ativo' : (profile?.tipo_conta || 'Usuário');
 
   return (
     <div className="flex flex-col gap-8 pb-10 animate-app-in">
-      <section className="flex justify-between items-center px-1">
+      {/* HEADER */}
+      <section className="flex justify-between items-center">
         <div className="flex items-center gap-4">
-          <Link to="/perfil" className="block active:scale-95 transition-transform">
+          <Link to="/perfil" className="block active:scale-90 transition-transform">
             <MascotAvatar 
               seed={profile?.avatar_seed || user?.id || 'anon'} 
-              size={56} 
-              className="border-2 border-white shadow-md rounded-2xl"
+              size={52} 
+              className="border-2 border-white shadow-sm rounded-2xl"
             />
           </Link>
           <div className="min-w-0">
-            <h2 className="text-xl font-extrabold text-black tracking-tight leading-none truncate max-w-[180px]">Olá, {firstName}</h2>
-            <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 mt-1 inline-block">
-              {roleLabel}
-            </span>
+            <span className="text-[10px] font-black uppercase tracking-widest text-[#111111]/30 block">Dashboard</span>
+            <h2 className="text-xl font-extrabold text-[#111111] tracking-tight leading-none truncate">Olá, {firstName}</h2>
           </div>
         </div>
-        <Link to="/perfil/editar" className="w-10 h-10 rounded-xl bg-white border border-black/5 flex items-center justify-center text-gray-400 active:scale-90 transition-transform btn-active">
+        <Link to="/perfil/editar" className="w-12 h-12 rounded-2xl bg-white border border-[#111111]/5 flex items-center justify-center text-[#111111] active:scale-90 transition-all shadow-sm">
           <Settings size={20} />
         </Link>
       </section>
 
-      <section>
-        <div className="bg-[#E2F687]/40 rounded-[2rem] p-5 flex items-center gap-4 border border-black/5 shadow-sm">
-          <div className="w-16 h-16 shrink-0 bg-white/60 rounded-xl p-2 flex items-center justify-center overflow-hidden">
-             <img src="https://i.postimg.cc/15FXPBTV/20260202-061509.png" alt="M" className="w-full h-auto" />
-          </div>
-          <p className="text-xs font-bold text-black leading-tight">
-            "Sua pequena doação hoje pode ser o recomeço de uma família."
-          </p>
-        </div>
-      </section>
-
-      <div className="bg-black rounded-[2rem] p-8 text-white relative overflow-hidden shadow-2xl">
+      {/* MAIN IMPACT CARD */}
+      <div className="bg-[#111111] rounded-[2.5rem] p-8 text-white relative overflow-hidden shadow-2xl">
         <div className="relative z-10">
-          <div className="flex items-center gap-2 text-[#E2F687] mb-6">
-            <TrendingUp size={14} />
-            <span className="text-[10px] font-black uppercase tracking-widest">Impacto Gerado</span>
+          <div className="flex items-center gap-2 text-[#C6F64E] mb-6">
+            <Zap size={14} fill="currentColor" />
+            <span className="text-[10px] font-black uppercase tracking-widest">Impacto na Rede</span>
           </div>
-          <div className="flex items-baseline gap-1">
-            <span className="text-4xl font-extrabold">R$ {(profile?.total_donated || 0).toLocaleString('pt-BR')}</span>
+          <div className="flex flex-col">
+            <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-1">Total Movimentado</span>
+            <span className="text-4xl font-black tracking-tighter">R$ {(profile?.total_donated || 0).toLocaleString('pt-BR')}</span>
           </div>
+          
           <div className="mt-8 flex gap-8">
             <div className="flex flex-col">
-              <span className="text-xl font-extrabold">{profile?.donations_count || 0}</span>
-              <span className="text-[9px] font-bold text-gray-500 uppercase tracking-tighter">Ações</span>
+              <span className="text-xl font-black">{profile?.donations_count || 0}</span>
+              <span className="text-[9px] font-bold text-white/30 uppercase tracking-widest mt-1">Ações Reais</span>
             </div>
             <div className="flex flex-col">
-              <span className="text-xl font-extrabold">{requests?.length || 0}</span>
-              <span className="text-[9px] font-bold text-gray-500 uppercase tracking-tighter">Pedidos Ativos</span>
+              <span className="text-xl font-black">{requests?.length || 0}</span>
+              <span className="text-[9px] font-bold text-white/30 uppercase tracking-widest mt-1">Aguardando</span>
             </div>
           </div>
         </div>
-        <div className="absolute top-0 right-0 w-32 h-32 bg-[#E2F687]/10 rounded-full -mr-16 -mt-16 blur-3xl"></div>
+        {/* Background Accent */}
+        <div className="absolute top-0 right-0 w-40 h-40 bg-[#C6F64E]/10 rounded-full blur-[60px] -mr-20 -mt-20"></div>
       </div>
 
-      <section className="grid grid-cols-2 gap-4">
-        <Link to="/novo-pedido" className="bg-white p-6 rounded-[2rem] border border-black/5 flex flex-col justify-between h-40 group shadow-sm active:scale-95 transition-all">
-          <div className="w-12 h-12 bg-black text-[#E2F687] rounded-xl flex items-center justify-center">
-            <PlusCircle size={24} />
-          </div>
-          <div className="flex justify-between items-end">
-            <span className="text-lg font-extrabold text-black leading-tight tracking-tight">Pedir<br/>ajuda</span>
-            <ArrowUpRight size={18} className="text-gray-300" />
-          </div>
-        </Link>
-
-        <Link to="/feed" className="bg-white p-6 rounded-[2rem] border border-black/5 flex flex-col justify-between h-40 group shadow-sm active:scale-95 transition-all">
-          <div className="w-12 h-12 bg-[#E2F687] text-black rounded-xl flex items-center justify-center">
-            <Heart size={24} />
-          </div>
-          <div className="flex justify-between items-end">
-            <span className="text-lg font-extrabold text-black leading-tight tracking-tight">Quero<br/>ajudar</span>
-            <ArrowUpRight size={18} className="text-gray-300" />
-          </div>
-        </Link>
+      {/* QUICK ACTIONS */}
+      <section className="grid grid-cols-4 gap-4 px-2">
+        {[
+          { icon: PlusCircle, label: 'Pedir', color: 'bg-[#C6F64E] text-[#111111]', to: '/novo-pedido' },
+          { icon: Heart, label: 'Ajudar', color: 'bg-white text-[#111111]', to: '/feed' },
+          { icon: Users, label: 'Amigos', color: 'bg-white text-[#111111]', to: '/convidar' },
+          { icon: ShieldCheck, label: 'Impacto', color: 'bg-white text-[#111111]', to: '/impacto' }
+        ].map((item, i) => (
+          <Link key={i} to={item.to} className="flex flex-col items-center gap-2 group">
+            <div className={`${item.color} w-14 h-14 rounded-full flex items-center justify-center shadow-sm group-active:scale-90 transition-all border border-[#111111]/5`}>
+              <item.icon size={22} />
+            </div>
+            <span className="text-[9px] font-black uppercase tracking-widest text-[#111111]/40">{item.label}</span>
+          </Link>
+        ))}
       </section>
 
-      <section className="flex flex-col gap-4">
-        <div className="flex justify-between items-center px-1">
-          <h3 className="text-lg font-extrabold text-black tracking-tight">Urgências Próximas</h3>
-          <Link to="/feed" className="text-[10px] font-black text-gray-400 uppercase tracking-widest underline underline-offset-4">Ver todos</Link>
+      {/* FEED PREVIEW */}
+      <section className="flex flex-col gap-6">
+        <div className="flex justify-between items-center px-2">
+          <h3 className="text-lg font-black text-[#111111] tracking-tighter">Urgências Agora</h3>
+          <Link to="/feed" className="text-[10px] font-black text-[#111111]/30 uppercase tracking-widest border-b border-[#111111]/10 pb-1">Ver tudo</Link>
         </div>
         <div className="flex flex-col gap-4">
-          {(requests || []).slice(0, 2).map(req => (
+          {(requests || []).slice(0, 3).map(req => (
             <RequestCard key={req.id} request={req} />
           ))}
           {(!requests || requests.length === 0) && (
-            <div className="bg-white border border-dashed border-black/5 rounded-[2rem] p-10 text-center">
-              <p className="text-gray-400 font-bold text-xs uppercase tracking-widest">Nenhum pedido aberto</p>
+            <div className="bg-white rounded-[2rem] p-12 text-center border border-dashed border-[#111111]/10">
+              <p className="text-[#111111]/20 font-black uppercase text-[10px] tracking-widest">Aguardando sinais...</p>
             </div>
           )}
         </div>

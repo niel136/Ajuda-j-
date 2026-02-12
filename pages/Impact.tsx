@@ -1,104 +1,103 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { TrendingUp, Users, Zap, Globe, Sparkles, Heart } from 'lucide-react';
+import { TrendingUp, Users, Zap, Globe, Sparkles, Heart, ChevronRight } from 'lucide-react';
 
 const Impact: React.FC = () => {
   const { globalImpact, profile } = useApp();
+  const [filter, setFilter] = useState('Mensal');
 
   return (
-    <div className="flex flex-col gap-8 pb-10 animate-app-in">
-      {/* HEADER IMPACTO */}
-      <section className="flex flex-col items-center text-center pt-4">
-        <div className="bg-black text-[#E2F687] p-5 rounded-[2.5rem] mb-6 shadow-2xl shadow-black/20">
-          <Globe size={36} />
-        </div>
-        <h1 className="text-4xl font-extrabold text-black tracking-tighter leading-none">
-          Transparência <br/><span className="text-gray-400">em Real-Time</span>
-        </h1>
-        <p className="text-gray-500 font-bold text-sm mt-4 px-6 leading-relaxed">
-          O impacto do AjudaJá é medido em vidas transformadas, não em cliques.
-        </p>
+    <div className="flex flex-col gap-10 pb-10 animate-app-in">
+      {/* FILTROS PILL */}
+      <section className="flex justify-center gap-2 overflow-x-auto no-scrollbar py-2">
+        {['Hoje', 'Semana', 'Mensal', 'Anual'].map((p) => (
+          <button 
+            key={p} 
+            onClick={() => setFilter(p)}
+            className={`px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${filter === p ? 'bg-[#111111] text-[#C6F64E]' : 'bg-white text-[#111111]/30 border border-[#111111]/5'}`}
+          >
+            {p}
+          </button>
+        ))}
       </section>
 
-      {/* METRIC CARDS */}
-      <div className="grid grid-cols-1 gap-4">
-         <div className="bg-black rounded-[2.5rem] p-8 text-white relative overflow-hidden shadow-2xl">
-            <div className="relative z-10">
-              <div className="flex items-center gap-2 text-[#E2F687] mb-2">
-                <TrendingUp size={16} />
-                <span className="text-[10px] font-black uppercase tracking-widest">Total Solidário</span>
-              </div>
-              <div className="flex items-baseline gap-2">
-                <span className="text-4xl font-extrabold tracking-tighter">R$ {globalImpact.totalRaised.toLocaleString('pt-BR')}</span>
-              </div>
-              <p className="text-gray-500 text-[10px] font-bold mt-4 leading-tight uppercase tracking-widest">
-                Transferidos diretamente para famílias
-              </p>
-            </div>
-            <div className="absolute right-0 bottom-0 opacity-10">
-               <Heart size={180} fill="white" />
-            </div>
-         </div>
+      {/* STATS HEADER */}
+      <section className="flex flex-col items-center text-center">
+        <div className="w-16 h-16 bg-[#C6F64E] rounded-[1.5rem] flex items-center justify-center mb-6 shadow-xl shadow-[#C6F64E]/20">
+          <TrendingUp size={28} className="text-[#111111]" />
+        </div>
+        <h1 className="text-4xl font-black text-[#111111] tracking-tighter leading-none mb-4">
+          Seu Impacto <br/><span className="text-[#111111]/30">na Sociedade</span>
+        </h1>
+        <div className="flex items-center gap-4 mt-2">
+          <div className="px-4 py-1.5 bg-[#111111] text-white rounded-full text-[10px] font-black uppercase tracking-widest">
+            Nível: Embaixador
+          </div>
+        </div>
+      </section>
 
-         <div className="grid grid-cols-2 gap-4">
-            <div className="bg-white p-6 rounded-[2.5rem] border border-black/5 shadow-sm flex flex-col gap-3">
-               <div className="w-10 h-10 bg-blue-50 text-blue-500 rounded-xl flex items-center justify-center">
-                  <Users size={20} />
-               </div>
-               <div>
-                  <span className="text-2xl font-black text-black">{globalImpact.familiesHelped}</span>
-                  <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mt-1 leading-none">Vidas <br/>Impactadas</p>
-               </div>
+      {/* BIG NUMBER CARD */}
+      <div className="bg-[#111111] rounded-[2.5rem] p-10 text-white shadow-2xl relative overflow-hidden">
+        <span className="text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] mb-4 block">Arrecadação Global</span>
+        <div className="flex items-baseline gap-2">
+          <span className="text-5xl font-black tracking-tighter">R$ {globalImpact.totalRaised.toLocaleString('pt-BR')}</span>
+          <span className="text-[#C6F64E] text-sm font-black">+12%</span>
+        </div>
+        
+        {/* Simple Minimal Bar Chart */}
+        <div className="flex items-end gap-2 h-20 mt-10">
+          {[40, 70, 45, 90, 60, 80, 50, 95].map((h, i) => (
+            <div key={i} className="flex-1 bg-white/5 rounded-t-lg relative group">
+              <div 
+                className="absolute bottom-0 left-0 right-0 bg-[#C6F64E] rounded-t-lg transition-all duration-1000 group-hover:brightness-125" 
+                style={{ height: `${h}%` }}
+              ></div>
             </div>
-
-            <div className="bg-white p-6 rounded-[2.5rem] border border-black/5 shadow-sm flex flex-col gap-3">
-               <div className="w-10 h-10 bg-[#E2F687] text-black rounded-xl flex items-center justify-center">
-                  <Zap size={20} />
-               </div>
-               <div>
-                  <span className="text-2xl font-black text-black">{globalImpact.totalActions}</span>
-                  <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mt-1 leading-none">Ações de <br/>Solidariedade</p>
-               </div>
-            </div>
-         </div>
+          ))}
+        </div>
+        <div className="absolute -left-10 -bottom-10 w-40 h-40 bg-white/5 rounded-full blur-3xl"></div>
       </div>
 
-      {/* PERSONAL CONTRIBUTION SECTION */}
-      <section className="bg-white p-8 rounded-[2.5rem] border border-black/5 shadow-sm">
-         <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-black text-black tracking-tighter">Sua Parte no Impacto</h3>
-            <div className="bg-black text-[#E2F687] text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest">Ativo</div>
-         </div>
-         <div className="space-y-4">
-            <div className="flex justify-between items-center py-3 border-b border-black/5">
-               <span className="text-xs font-bold text-gray-500">Doações realizadas</span>
-               <span className="text-sm font-black text-black">{profile?.donations_count || 0}</span>
-            </div>
-            <div className="flex justify-between items-center py-3">
-               <span className="text-xs font-bold text-gray-500">Valor total doado</span>
-               <span className="text-sm font-black text-black">R$ {(profile?.total_donated || 0).toLocaleString('pt-BR')}</span>
-            </div>
-         </div>
+      {/* METRIC GRID */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="bg-white p-8 rounded-[2rem] border border-[#111111]/5 shadow-sm flex flex-col gap-6">
+          <div className="w-12 h-12 bg-[#F6F6F6] text-[#111111] rounded-2xl flex items-center justify-center">
+            <Users size={24} />
+          </div>
+          <div>
+            <span className="text-3xl font-black text-[#111111]">{globalImpact.familiesHelped}</span>
+            <p className="text-[9px] font-black text-[#111111]/30 uppercase tracking-widest mt-1">Famílias<br/>Apoiadas</p>
+          </div>
+        </div>
+
+        <div className="bg-white p-8 rounded-[2rem] border border-[#111111]/5 shadow-sm flex flex-col gap-6">
+          <div className="w-12 h-12 bg-[#C6F64E]/20 text-[#111111] rounded-2xl flex items-center justify-center">
+            <Zap size={24} />
+          </div>
+          <div>
+            <span className="text-3xl font-black text-[#111111]">{globalImpact.totalActions}</span>
+            <p className="text-[9px] font-black text-[#111111]/30 uppercase tracking-widest mt-1">Ações de<br/>Urgência</p>
+          </div>
+        </div>
+      </div>
+
+      {/* HIGHLIGHT SECTION */}
+      <section className="bg-[#111111] text-white p-8 rounded-[2.5rem] flex items-center justify-between group active:scale-95 transition-all">
+        <div className="flex items-center gap-6">
+          <div className="w-14 h-14 bg-white/10 rounded-2xl flex items-center justify-center text-[#C6F64E]">
+            <Heart size={24} fill="currentColor" />
+          </div>
+          <div>
+            <h4 className="font-black text-lg tracking-tight">Sua Contribuição</h4>
+            <p className="text-white/40 text-[10px] font-bold uppercase tracking-widest">R$ {(profile?.total_donated || 0).toLocaleString('pt-BR')} doados</p>
+          </div>
+        </div>
+        <ChevronRight className="text-white/20 group-hover:text-white transition-colors" />
       </section>
 
-      {/* IMPACT HIGHLIGHTS */}
-      <section className="bg-gray-100/50 border border-black/5 rounded-[2.5rem] p-6 flex items-start gap-4">
-         <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shrink-0 shadow-sm text-yellow-500">
-            <Sparkles size={20} />
-         </div>
-         <div>
-            <h4 className="font-extrabold text-black text-sm">Objetivo da Rede</h4>
-            <p className="text-xs text-gray-600 font-medium leading-relaxed mt-1">
-              Nossa rede foca na urgência. 90% dos pedidos de alimentação são atendidos em menos de 48h graças a doadores como você.
-            </p>
-         </div>
-      </section>
-
-      <div className="text-center mt-6">
-        <span className="text-[10px] font-black text-gray-300 uppercase tracking-[0.3em]">
-          Powered by Solidariedade Real
-        </span>
+      <div className="text-center">
+        <span className="text-[10px] font-black text-[#111111]/10 uppercase tracking-[0.4em]">Fintech Social Premium</span>
       </div>
     </div>
   );

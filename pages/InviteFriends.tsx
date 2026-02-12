@@ -8,7 +8,7 @@ import { ArrowLeft, Users, Zap, ShieldCheck, Trophy, CheckCircle2 } from 'lucide
 
 const InviteFriends: React.FC = () => {
   const navigate = useNavigate();
-  const { trackFeatureClick, profile } = useApp();
+  const { trackFeatureClick } = useApp();
   const [isSubscribed, setIsSubscribed] = useState(false);
 
   const handleNotifyMe = async () => {

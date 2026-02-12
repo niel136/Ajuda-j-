@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
-import { supabase, uploadFile } from '../lib/supabase';
+import { uploadFile } from '../lib/supabase';
 import Button from '../components/Button';
 import MascotAvatar from '../components/MascotAvatar';
 import { ArrowLeft, User, Save, CheckCircle2, Camera, X } from 'lucide-react';

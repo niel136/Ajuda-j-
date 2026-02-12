@@ -10,86 +10,71 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
   
   const isAuthPage = ['/login', '/signup', '/onboarding', '/tipo-conta', '/welcome'].includes(location.pathname);
-  const isBusiness = profile?.tipo_conta === 'business';
   
   if (isAuthPage) {
-    return <div className="min-h-[100dvh] w-full bg-[#F8FAF5]">{children}</div>;
+    return <div className="min-h-[100dvh] w-full bg-[#F6F6F6]">{children}</div>;
   }
 
   const isTabActive = (path: string) => location.pathname === path;
 
-  // Temas dinâmicos
-  const bgClass = isBusiness ? 'bg-slate-50' : 'bg-[#F8FAF5]';
-  const navBgClass = isBusiness ? 'bg-slate-900/95 text-white' : 'bg-white/95 text-gray-300';
-  const accentClass = isBusiness ? 'text-indigo-400' : 'text-[#E2F687]';
-  const activeTabClass = isBusiness ? 'text-indigo-400' : 'text-black';
-
   return (
-    <div className={`flex flex-col min-h-[100dvh] w-full max-w-[500px] mx-auto ${bgClass} relative shadow-2xl shadow-black/5`}>
+    <div className="flex flex-col min-h-[100dvh] w-full max-w-[500px] mx-auto bg-[#F6F6F6] relative shadow-2xl shadow-black/5">
       
       {/* HEADER */}
-      <header className={`sticky top-0 z-40 px-6 py-4 flex justify-between items-center pt-safe border-b border-black/5 ${isBusiness ? 'bg-slate-50/90' : 'bg-[#F8FAF5]/90'} backdrop-blur-md`}>
-        <Link to="/" className="flex items-center gap-2 active:scale-95 transition-transform">
-            <img 
-              src="https://i.postimg.cc/DyndbWTX/20260202-061526.png" 
-              alt="AjudaJá" 
-              className={`w-8 h-8 object-contain ${isBusiness ? 'grayscale brightness-50' : ''}`}
-            />
-            <h1 className={`font-extrabold text-xl tracking-tighter ${isBusiness ? 'text-slate-900' : 'text-black'}`}>
-              AjudaJá {isBusiness && <span className="text-[10px] font-black uppercase text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full ml-1">Business</span>}
+      <header className="sticky top-0 z-40 px-8 py-6 flex justify-between items-center pt-safe bg-[#F6F6F6]/80 backdrop-blur-xl">
+        <Link to="/" className="flex items-center gap-3 active:scale-95 transition-transform">
+            <div className="w-10 h-10 bg-[#111111] rounded-2xl flex items-center justify-center shadow-lg">
+              <img 
+                src="https://i.postimg.cc/DyndbWTX/20260202-061526.png" 
+                alt="AjudaJá" 
+                className="w-6 h-6 brightness-0 invert"
+              />
+            </div>
+            <h1 className="font-black text-xl tracking-tighter text-[#111111]">
+              AjudaJá
             </h1>
         </Link>
         {user && (
           <Link to="/perfil" className="btn-active">
             <MascotAvatar 
               seed={profile?.avatar_seed || user.id} 
-              size={40} 
-              className={`border-2 border-white shadow-md rounded-xl ${isBusiness ? 'grayscale' : ''}`} 
+              size={44} 
+              className="border-2 border-white shadow-md rounded-2xl" 
             />
           </Link>
         )}
       </header>
 
-      {/* CONTEÚDO */}
-      <main className={`flex-1 px-5 pt-5 pb-36 overflow-x-hidden animate-app-in`}>
+      {/* MAIN CONTENT */}
+      <main className="flex-1 px-8 pt-4 pb-32 overflow-x-hidden animate-app-in">
         {children}
       </main>
 
-      {/* NAVEGAÇÃO (DOCK) */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 flex justify-center px-6 pb-8 pointer-events-none">
-        <nav className={`${navBgClass} backdrop-blur-2xl rounded-[3rem] shadow-[0_25px_60px_rgba(0,0,0,0.15)] border border-white/10 px-3 py-2 flex items-center justify-around w-full max-w-[400px] pointer-events-auto`}>
+      {/* DOCK NAVIGATION (FLOATING) */}
+      <div className="fixed bottom-10 left-0 right-0 z-50 flex justify-center px-8 pointer-events-none">
+        <nav className="bg-[#111111]/95 backdrop-blur-2xl rounded-[2.5rem] shadow-2xl border border-white/10 p-2 flex items-center justify-between w-full max-w-[380px] pointer-events-auto h-20">
           
-          <Link to="/" className={`flex flex-col items-center gap-1 p-3.5 rounded-2xl transition-all btn-active ${isTabActive('/') ? activeTabClass : ''}`}>
-            <Home size={24} strokeWidth={isTabActive('/') ? 2.5 : 2} />
+          <Link to="/" className={`flex-1 flex justify-center p-4 rounded-3xl transition-all ${isTabActive('/') ? 'text-[#C6F64E]' : 'text-white/30 hover:text-white'}`}>
+            <Home size={22} strokeWidth={isTabActive('/') ? 2.5 : 2} />
           </Link>
 
-          <Link to="/feed" className={`flex flex-col items-center gap-1 p-3.5 rounded-2xl transition-all btn-active ${isTabActive('/feed') ? activeTabClass : ''}`}>
-            <Grid size={24} strokeWidth={isTabActive('/feed') ? 2.5 : 2} />
+          <Link to="/feed" className={`flex-1 flex justify-center p-4 rounded-3xl transition-all ${isTabActive('/feed') ? 'text-[#C6F64E]' : 'text-white/30 hover:text-white'}`}>
+            <Grid size={22} strokeWidth={isTabActive('/feed') ? 2.5 : 2} />
           </Link>
 
-          {!isBusiness && (
-            <Link 
-              to="/novo-pedido" 
-              className="bg-black text-[#E2F687] w-16 h-16 rounded-[2rem] shadow-2xl shadow-black/30 flex items-center justify-center transform -translate-y-8 btn-active transition-all border-[6px] border-[#F8FAF5]"
-            >
-              <Plus size={36} strokeWidth={3} />
-            </Link>
-          )}
+          <Link 
+            to="/novo-pedido" 
+            className="bg-[#C6F64E] text-[#111111] w-14 h-14 rounded-[1.5rem] shadow-xl flex items-center justify-center active:scale-90 transition-all mx-2"
+          >
+            <Plus size={30} strokeWidth={3} />
+          </Link>
 
-          {isBusiness && (
-            <Link to="/impacto" className={`flex flex-col items-center gap-1 p-3.5 rounded-2xl transition-all btn-active ${isTabActive('/impacto') ? activeTabClass : ''}`}>
-              <BarChart3 size={24} strokeWidth={isTabActive('/impacto') ? 2.5 : 2} />
-            </Link>
-          )}
+          <Link to="/impacto" className={`flex-1 flex justify-center p-4 rounded-3xl transition-all ${isTabActive('/impacto') ? 'text-[#C6F64E]' : 'text-white/30 hover:text-white'}`}>
+            <BarChart3 size={22} strokeWidth={isTabActive('/impacto') ? 2.5 : 2} />
+          </Link>
 
-          {!isBusiness && (
-            <Link to="/impacto" className={`flex flex-col items-center gap-1 p-3.5 rounded-2xl transition-all btn-active ${isTabActive('/impacto') ? activeTabClass : ''}`}>
-              <Heart size={24} strokeWidth={isTabActive('/impacto') ? 2.5 : 2} />
-            </Link>
-          )}
-
-          <Link to="/perfil" className={`flex flex-col items-center gap-1 p-3.5 rounded-2xl transition-all btn-active ${isTabActive('/perfil') ? activeTabClass : ''}`}>
-            <User size={24} strokeWidth={isTabActive('/perfil') ? 2.5 : 2} />
+          <Link to="/perfil" className={`flex-1 flex justify-center p-4 rounded-3xl transition-all ${isTabActive('/perfil') ? 'text-[#C6F64E]' : 'text-white/30 hover:text-white'}`}>
+            <User size={22} strokeWidth={isTabActive('/perfil') ? 2.5 : 2} />
           </Link>
         </nav>
       </div>

@@ -4,8 +4,8 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-    <title>AjudaJá | Conectando Solidariedade</title>
-    <meta name="theme-color" content="#F8FAF5" />
+    <title>AjudaJá | Fintech Social</title>
+    <meta name="theme-color" content="#F6F6F6" />
     <link rel="icon" type="image/png" href="https://i.postimg.cc/DyndbWTX/20260202-061526.png" />
     <base href="/" />
     <script>window.process = { env: { NODE_ENV: 'production' } };</script>
@@ -14,54 +14,69 @@
     <style>
       body { 
         font-family: 'Plus Jakarta Sans', sans-serif; 
-        background-color: #F8FAF5; 
+        background-color: #F6F6F6; 
         margin: 0;
         padding: 0;
         overflow-x: hidden;
         -webkit-tap-highlight-color: transparent;
         height: 100dvh;
+        color: #111111;
       }
       #root { min-height: 100dvh; display: flex; flex-direction: column; }
       .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
       .pt-safe { padding-top: env(safe-area-inset-top); }
+      
       @keyframes float {
         0%, 100% { transform: translateY(0px); }
-        50% { transform: translateY(-8px); }
+        50% { transform: translateY(-10px); }
       }
-      .animate-float { animation: float 3s ease-in-out infinite; }
+      .animate-float { animation: float 4s ease-in-out infinite; }
+      
       .animate-app-in { 
-        animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        animation: slideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1);
       }
+      
       @keyframes slideUp {
-        from { transform: translateY(20px); opacity: 0; }
+        from { transform: translateY(30px); opacity: 0; }
         to { transform: translateY(0); opacity: 1; }
       }
+      
       .no-scrollbar::-webkit-scrollbar { display: none; }
       .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
       
       input, select, textarea {
         font-size: 16px !important; 
+        background-color: #FFFFFF !important;
       }
       
-      .btn-active:active { transform: scale(0.95); opacity: 0.8; }
+      .btn-active:active { transform: scale(0.96); opacity: 0.9; }
+      
+      .fintech-card {
+        background: #111111;
+        border-radius: 2rem;
+        color: white;
+      }
+
+      .pill-active {
+        background-color: #C6F64E;
+        color: #111111;
+      }
     </style>
-    <script type="importmap">
+  <script type="importmap">
 {
   "imports": {
-    "react": "https://esm.sh/react@19.0.0",
-    "react/": "https://esm.sh/react@19.0.0/",
-    "react-dom": "https://esm.sh/react-dom@19.0.0",
-    "react-dom/": "https://esm.sh/react-dom@19.0.0/",
-    "react-dom/client": "https://esm.sh/react-dom@19.0.0/client",
-    "react-router-dom": "https://esm.sh/react-router-dom@7.1.3?deps=react@19.0.0,react-dom@19.0.0",
-    "lucide-react": "https://esm.sh/lucide-react@0.463.0?deps=react@19.0.0",
-    "@google/genai": "https://esm.sh/@google/genai@1.3.0",
-    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2.45.4",
-    "@capacitor/cli": "https://esm.sh/@capacitor/cli@^8.0.2"
+    "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
+    "react/": "https://esm.sh/react@^19.2.4/",
+    "react": "https://esm.sh/react@^19.2.4",
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@^2.95.3",
+    "@capacitor/cli": "https://esm.sh/@capacitor/cli@^8.1.0",
+    "react-router-dom": "https://esm.sh/react-router-dom@^7.13.0",
+    "@google/genai": "https://esm.sh/@google/genai@^1.41.0",
+    "lucide-react": "https://esm.sh/lucide-react@^0.563.0"
   }
 }
 </script>
-  </head>
+</head>
   <body>
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>

@@ -2,7 +2,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
-import { ArrowLeft, CreditCard, History, Plus, DollarSign, CheckCircle2, Clock } from 'lucide-react';
+import { ArrowLeft, CreditCard, History, DollarSign, CheckCircle2 } from 'lucide-react';
 import Button from '../components/Button';
 
 const Payments: React.FC = () => {

@@ -1,3 +1,4 @@
+
 import React from 'react';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -17,22 +18,22 @@ const Button: React.FC<ButtonProps> = ({
   disabled,
   ...props 
 }) => {
-  const baseStyles = "inline-flex items-center justify-center font-extrabold transition-all transform active:scale-95 select-none disabled:opacity-30 disabled:grayscale disabled:cursor-not-allowed h-14";
+  const baseStyles = "inline-flex items-center justify-center font-bold transition-all duration-300 transform active:scale-95 select-none disabled:opacity-30 disabled:grayscale disabled:cursor-not-allowed";
   
   const variants = {
-    primary: "bg-[#E2F687] text-black shadow-lg shadow-[#E2F687]/20",
-    black: "bg-black text-white shadow-xl shadow-black/10",
-    secondary: "bg-gray-100 text-gray-900 border border-black/5",
-    outline: "border-2 border-black text-black bg-transparent",
-    ghost: "bg-transparent text-gray-500",
+    primary: "bg-[#C6F64E] text-[#111111] hover:brightness-105",
+    black: "bg-[#111111] text-white hover:bg-[#222222]",
+    secondary: "bg-white text-[#111111] border border-[#111111]/10",
+    outline: "border-2 border-[#111111] text-[#111111] bg-transparent hover:bg-[#111111] hover:text-white",
+    ghost: "bg-transparent text-[#111111]/60 hover:text-[#111111]",
     danger: "bg-red-500 text-white"
   };
 
   const sizes = {
-    sm: "px-4 py-2 text-xs rounded-2xl h-11",
-    md: "px-6 py-3 text-sm rounded-[1.5rem]", 
-    lg: "px-8 py-4 text-base rounded-[2rem] h-16",
-    icon: "p-3 w-14 h-14 rounded-full"
+    sm: "px-5 py-2.5 text-xs rounded-full h-10",
+    md: "px-8 py-4 text-sm rounded-2xl h-14", 
+    lg: "px-10 py-5 text-base rounded-[2rem] h-16",
+    icon: "p-4 w-14 h-14 rounded-full"
   };
 
   return (
@@ -42,7 +43,7 @@ const Button: React.FC<ButtonProps> = ({
       {...props}
     >
       {isLoading ? (
-        <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
         </svg>

@@ -13,8 +13,8 @@ interface State {
   error?: Error;
 }
 
-// Fixed: Inheriting from Component instead of React.Component can help resolve type inference issues in certain environments
-class ErrorBoundary extends Component<Props, State> {
+// Fixed: Inheriting from React.Component with explicit generic types <Props, State> resolves issues where 'this.props' and 'this.state' are not correctly inferred.
+class ErrorBoundary extends React.Component<Props, State> {
   constructor(props: Props) {
     super(props);
     // Initializing state correctly within the constructor context
@@ -32,7 +32,7 @@ class ErrorBoundary extends Component<Props, State> {
   }
 
   public render() {
-    // Correctly accessing state via this.state
+    // Correctly accessing state via this.state after establishing proper inheritance
     if (this.state.hasError) {
       return (
         <div className="min-h-screen bg-[#F8FAF5] flex flex-col items-center justify-center p-8 text-center">
@@ -58,7 +58,7 @@ class ErrorBoundary extends Component<Props, State> {
       );
     }
 
-    // Correctly accessing props via this.props
+    // Correctly accessing props via this.props after establishing proper inheritance
     return this.props.children;
   }
 }

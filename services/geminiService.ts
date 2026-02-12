@@ -1,23 +1,16 @@
 
 import { GoogleGenAI } from "@google/genai";
 
-// Função para obter o cliente AI de forma segura apenas quando necessário
-const getAIClient = () => {
-  const apiKey = process.env.API_KEY;
-  if (!apiKey) {
-    console.warn('Gemini API Key não encontrada no ambiente.');
-    return null;
-  }
-  return new GoogleGenAI({ apiKey });
-};
+// Removed global helper to follow the guideline of instantiating GoogleGenAI 
+// right before making an API call to ensure use of the most up-to-date configuration.
 
 export const analyzeRequestConfidence = async (
   title: string,
   description: string
 ): Promise<number> => {
   try {
-    const ai = getAIClient();
-    if (!ai) return 50;
+    // Correct initialization as per @google/genai guidelines
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
     const prompt = `Analise a veracidade e clareza deste pedido de ajuda:
     Título: ${title}
@@ -31,6 +24,7 @@ export const analyzeRequestConfidence = async (
       contents: prompt,
     });
 
+    // Access .text property directly (not a method) from GenerateContentResponse
     const scoreStr = response.text?.replace(/\D/g, '') || "50";
     const score = parseInt(scoreStr);
     return isNaN(score) ? 50 : score;
@@ -45,8 +39,8 @@ export const enhanceDescription = async (
   category: string
 ): Promise<string> => {
   try {
-    const ai = getAIClient();
-    if (!ai) return rawText;
+    // Correct initialization as per @google/genai guidelines
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
     const prompt = `
       Melhore o seguinte texto de um pedido de ajuda na categoria "${category}".
@@ -59,6 +53,7 @@ export const enhanceDescription = async (
       contents: prompt,
     });
 
+    // Access .text property directly (not a method) from GenerateContentResponse
     return response.text || rawText;
   } catch (error) {
     console.error('Erro ao melhorar descrição com Gemini:', error);

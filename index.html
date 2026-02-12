@@ -20,9 +20,16 @@
         overflow-x: hidden;
         -webkit-tap-highlight-color: transparent;
         height: 100dvh;
+        width: 100vw;
         color: #111111;
       }
-      #root { min-height: 100dvh; display: flex; flex-direction: column; }
+      #root { 
+        min-height: 100dvh; 
+        display: flex; 
+        flex-direction: column;
+        width: 100%;
+        overflow-x: hidden;
+      }
       .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
       .pt-safe { padding-top: env(safe-area-inset-top); }
       
@@ -47,6 +54,8 @@
       input, select, textarea {
         font-size: 16px !important; 
         background-color: #FFFFFF !important;
+        max-width: 100%;
+        box-sizing: border-box;
       }
       
       .btn-active:active { transform: scale(0.96); opacity: 0.9; }
@@ -60,6 +69,12 @@
       .pill-active {
         background-color: #C6F64E;
         color: #111111;
+      }
+
+      /* Previne scroll lateral acidental */
+      * {
+        max-width: 100vw;
+        box-sizing: border-box;
       }
     </style>
   <script type="importmap">

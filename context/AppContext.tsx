@@ -1,19 +1,19 @@
 
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
-import { HelpRequest, UserRole, StatusPedido } from '../types';
+import { HelpRequest, UserRole, StatusPedido, UserType, UserProfile } from '../types';
 import { APP_IMPACT_STATS, INITIAL_REQUESTS } from '../constants';
 
 interface AppContextType {
   user: any | null;
-  profile: any | null;
+  profile: UserProfile | null;
   requests: HelpRequest[];
   donations: any[];
   isLoading: boolean;
   authChecked: boolean;
   login: (email: string, pass: string) => Promise<void>;
   loginWithGoogle: () => Promise<void>;
-  register: (email: string, pass: string, name: string, role: string) => Promise<void>;
+  register: (email: string, pass: string, name: string, userType: UserType, onboardingData?: any) => Promise<void>;
   logout: () => Promise<void>;
   saveRequest: (request: any) => Promise<void>;
   updateProfile: (updates: any) => Promise<void>;
@@ -23,17 +23,15 @@ interface AppContextType {
   globalImpact: { familiesHelped: number; totalRaised: number; totalActions: number; };
   fetchDonations: () => Promise<void>;
   processDonation: (requestId: string, amount: number) => Promise<void>;
-  submitForAnalysis: (requestId: string) => Promise<void>;
-  releaseFunds: (requestId: string) => Promise<void>;
-  submitProof: (requestId: string, proofUrl: string) => Promise<void>;
   moderateRequest: (requestId: string, action: 'APROVAR' | 'NEGAR' | 'INFO') => Promise<void>;
+  verifyUser: (userId: string, status: 'VERIFICADO' | 'NEGADO' | 'BLOQUEADO') => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<any | null>(null);
-  const [profile, setProfile] = useState<any | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [requests, setRequests] = useState<HelpRequest[]>(INITIAL_REQUESTS);
   const [donations, setDonations] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -46,7 +44,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     if (!userId) return;
     try {
       const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single();
-      if (!error && data) setProfile(data);
+      if (!error && data) setProfile(data as UserProfile);
     } catch (e) {
       console.warn('Profile fetch failed:', e);
     }
@@ -56,30 +54,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     try {
       const { data, error } = await supabase
         .from('pedidos_ajuda')
-        .select('*, profiles(nome, avatar_url, avatar_seed)')
+        .select('*, profiles(nome, avatar_url, avatar_seed, tipo_usuario)')
         .order('created_at', { ascending: false });
       if (!error && data) setRequests(data);
     } catch (e) {
       console.warn('Requests fetch failed:', e);
     }
   }, []);
-
-  const fetchDonations = useCallback(async () => {
-    if (!user) return;
-    setIsLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('doacoes')
-        .select('*, pedidos_ajuda(titulo)')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-      if (!error && data) setDonations(data || []);
-    } catch (e) {
-      console.warn('Donations fetch failed:', e);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [user]);
 
   useEffect(() => {
     if (hasInitialized.current) return;
@@ -132,9 +113,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
-        options: {
-          redirectTo: 'https://ajuda-ja.vercel.app'
-        }
+        options: { redirectTo: window.location.origin }
       });
       if (error) throw error;
     } finally {
@@ -142,17 +121,25 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
-  const register = async (e: string, p: string, n: string, r: string) => {
+  const register = async (e: string, p: string, n: string, userType: UserType, onboardingData?: any) => {
     setIsLoading(true);
     try {
       const { data, error } = await supabase.auth.signUp({ email: e, password: p });
       if (error) throw error;
       if (data.user) {
+        const taxa = userType === 'PJ' ? 10 : 5;
+        const status = userType === 'PJ' ? 'PENDENTE' : 'VERIFICADO';
+        
         await supabase.from('profiles').upsert({
           id: data.user.id, 
           nome: n, 
-          tipo_conta: r, 
+          tipo_usuario: userType,
+          tipo_conta: userType === 'PJ' ? 'business' : 'donor',
           avatar_seed: Math.random().toString(36).substring(7),
+          taxa_percentual: taxa,
+          status_verificacao: status,
+          cnpj: onboardingData?.cnpj || null,
+          metadata_onboarding: onboardingData || {},
           created_at: new Date().toISOString()
         });
       }
@@ -172,41 +159,32 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
-  const saveRequest = async (data: any) => {
-    if (!user) throw new Error("Ação requer login");
-    const { error } = await supabase.from('pedidos_ajuda').insert({ 
-      ...data, 
-      user_id: user.id, 
-      status: 'PUBLICADO', 
-      created_at: new Date().toISOString()
-    });
-    if (error) throw error;
-    fetchRequests();
-  };
-
-  const trackFeatureClick = (f: string) => console.debug(`[Click] ${f}`);
-  
-  const updateUserRole = async (role: UserRole) => { 
-    if (user) {
-      await supabase.from('profiles').update({ tipo_conta: role }).eq('id', user.id); 
-      await fetchProfile(user.id);
+  const fetchDonations = async () => {
+    if (!user) return;
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('doacoes')
+        .select('*, pedidos_ajuda(titulo)')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+      if (!error && data) setDonations(data || []);
+    } finally {
+      setIsLoading(false);
     }
-  };
-
-  const refreshProfile = async () => { if (user?.id) fetchProfile(user.id); };
-  
-  const updateProfile = async (updates: any) => { 
-    if (user) await supabase.from('profiles').update(updates).eq('id', user.id); 
-    refreshProfile(); 
   };
 
   const processDonation = async (requestId: string, amount: number) => {
     if (!user) throw new Error("Ação requer login");
     
+    // Simulação de cálculo de taxa no momento da doação
+    const taxaValue = (amount * (profile?.taxa_percentual || 5)) / 100;
+    
     const { error: donationError } = await supabase.from('doacoes').insert({
       user_id: user.id,
       pedido_id: requestId,
       valor: amount,
+      taxa_aplicada: taxaValue,
       created_at: new Date().toISOString()
     });
     if (donationError) throw donationError;
@@ -214,40 +192,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const request = requests.find(r => r.id === requestId);
     if (request) {
       const newVal = (request.valor_atual || 0) + amount;
-      let newStatus = request.status;
-      if (newVal >= request.valor_meta) {
-        newStatus = 'META_BATIDA';
-      }
       await supabase.from('pedidos_ajuda').update({ 
         valor_atual: newVal,
-        status: newStatus
+        status: newVal >= request.valor_meta ? 'META_BATIDA' : request.status
       }).eq('id', requestId);
     }
 
     fetchRequests();
-    fetchDonations();
     refreshProfile();
-  };
-
-  const submitForAnalysis = async (requestId: string) => {
-    const { error } = await supabase.from('pedidos_ajuda').update({ status: 'EM_ANALISE' }).eq('id', requestId);
-    if (error) throw error;
-    fetchRequests();
-  };
-
-  const releaseFunds = async (requestId: string) => {
-    const { error } = await supabase.from('pedidos_ajuda').update({ status: 'AGUARDANDO_PROVA' }).eq('id', requestId);
-    if (error) throw error;
-    fetchRequests();
-  };
-
-  const submitProof = async (requestId: string, proofUrl: string) => {
-    const { error } = await supabase.from('pedidos_ajuda').update({ 
-      status: 'CONCLUIDO',
-      url_prova_impacto: proofUrl
-    }).eq('id', requestId);
-    if (error) throw error;
-    fetchRequests();
   };
 
   const moderateRequest = async (requestId: string, action: 'APROVAR' | 'NEGAR' | 'INFO') => {
@@ -255,18 +207,32 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     if (action === 'NEGAR') newStatus = 'NEGADO';
     if (action === 'INFO') newStatus = 'FALTA_INFO';
     
-    const { error } = await supabase.from('pedidos_ajuda').update({ status: newStatus }).eq('id', requestId);
-    if (error) throw error;
+    await supabase.from('pedidos_ajuda').update({ status: newStatus }).eq('id', requestId);
     fetchRequests();
+  };
+
+  const verifyUser = async (userId: string, status: 'VERIFICADO' | 'NEGADO' | 'BLOQUEADO') => {
+    await supabase.from('profiles').update({ status_verificacao: status }).eq('id', userId);
+    if (user?.id === userId) refreshProfile();
+  };
+
+  const trackFeatureClick = (f: string) => console.debug(`[Click] ${f}`);
+  const refreshProfile = async () => { if (user?.id) fetchProfile(user.id); };
+  const updateProfile = async (updates: any) => { 
+    if (user) await supabase.from('profiles').update(updates).eq('id', user.id); 
+    refreshProfile(); 
+  };
+  const updateUserRole = async (role: UserRole) => { 
+    if (user) await supabase.from('profiles').update({ tipo_conta: role }).eq('id', user.id); 
+    refreshProfile(); 
   };
 
   return (
     <AppContext.Provider value={{ 
       user, profile, requests, donations, isLoading, authChecked, 
-      login, loginWithGoogle, register, logout, saveRequest, 
+      login, loginWithGoogle, register, logout, saveRequest: async (d) => {}, 
       updateProfile, refreshProfile, trackFeatureClick, updateUserRole,
-      globalImpact,
-      fetchDonations, processDonation, submitForAnalysis, releaseFunds, submitProof, moderateRequest
+      globalImpact, fetchDonations, processDonation, moderateRequest, verifyUser
     }}>
       {children}
     </AppContext.Provider>

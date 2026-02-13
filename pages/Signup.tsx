@@ -18,7 +18,8 @@ const Signup: React.FC = () => {
     e.preventDefault();
     setError('');
     try {
-      await register(email, password, name, 'donor');
+      // Fix: 'PF' is the correct UserType for individual registration in the app's schema
+      await register(email, password, name, 'PF');
       navigate('/welcome');
     } catch (err: any) {
       setError(err.message || 'Erro ao criar conta.');

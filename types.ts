@@ -1,7 +1,24 @@
 
 export type UserRole = 'donor' | 'beneficiary' | 'business' | 'admin';
+export type UserType = 'PF' | 'PJ' | 'ADM';
+export type VerificationStatus = 'PENDENTE' | 'VERIFICADO' | 'NEGADO' | 'BLOQUEADO';
 
-// Added User interface to match MOCK_USER in constants.ts
+export interface UserProfile {
+  id: string;
+  nome: string;
+  tipo_usuario: UserType;
+  tipo_conta: UserRole;
+  avatar_url?: string;
+  avatar_seed?: string;
+  cnpj?: string;
+  taxa_percentual: number;
+  status_verificacao: VerificationStatus;
+  total_donated: number;
+  donations_count: number;
+  metadata_onboarding?: any;
+  created_at: string;
+}
+
 export interface User {
   id: string;
   name: string;
@@ -53,5 +70,6 @@ export interface HelpRequest {
     nome: string;
     avatar_url: string;
     avatar_seed: string;
+    tipo_usuario?: UserType;
   };
 }

@@ -7,8 +7,8 @@ import Layout from './components/Layout';
 import LoadingScreen from './components/LoadingScreen';
 import ErrorBoundary from './components/ErrorBoundary';
 
-const Home = lazy(() => import('./pages/Home'));
-const DashboardPJ = lazy(() => import('./pages/DashboardPJ'));
+const DashboardPF = lazy(() => import('./modules/pf/DashboardPF'));
+const DashboardPJ = lazy(() => import('./modules/pj/DashboardPJ'));
 const Feed = lazy(() => import('./pages/Feed'));
 const CreateRequest = lazy(() => import('./pages/CreateRequest'));
 const Login = lazy(() => import('./pages/Login'));
@@ -31,12 +31,12 @@ const AppRoutes = () => {
 
   if (!authChecked) return <LoadingScreen />;
 
-  // Componente de Redirecionamento Baseado em Role
-  const HomeRedirect = () => {
+  // Central Hub: Decide qual dashboard abrir baseado no perfil
+  const DashboardSelector = () => {
     if (!user) return <Navigate to="/onboarding" replace />;
     if (profile?.tipo_usuario === 'ADM') return <Navigate to="/admin" replace />;
-    if (profile?.tipo_usuario === 'PJ') return <DashboardPJ />;
-    return <Home />;
+    if (profile?.tipo_usuario === 'PJ') return <Navigate to="/dashboard/pj" replace />;
+    return <Navigate to="/dashboard/pf" replace />;
   };
 
   return (
@@ -47,17 +47,21 @@ const AppRoutes = () => {
         <Route path="/signup" element={user ? <Navigate to="/" replace /> : <Signup />} />
         <Route path="/welcome" element={!user ? <Navigate to="/onboarding" replace /> : <Welcome />} />
         
-        {/* Novas Rotas de Onboarding */}
+        {/* Onboarding Flow */}
         <Route path="/tipo-conta" element={user ? <AccountTypeSelection /> : <Navigate to="/onboarding" replace />} />
         <Route path="/onboarding-pf" element={user ? <OnboardingPF /> : <Navigate to="/onboarding" replace />} />
         <Route path="/onboarding-pj" element={user ? <OnboardingPJ /> : <Navigate to="/onboarding" replace />} />
 
-        {/* Dashboard Dinâmico */}
-        <Route path="/" element={<HomeRedirect />} />
+        {/* Home redirection */}
+        <Route path="/" element={<DashboardSelector />} />
         
-        {/* Rota Explícita para o Dashboard de Empresa (PJ) */}
-        <Route path="/dashboard-empresa" element={profile?.tipo_usuario === 'PJ' ? <DashboardPJ /> : <Navigate to="/" replace />} />
+        {/* MODULE: PF (Pessoa Física) */}
+        <Route path="/dashboard/pf" element={<Layout><DashboardPF /></Layout>} />
+        
+        {/* MODULE: PJ (Pessoa Jurídica) */}
+        <Route path="/dashboard/pj" element={<DashboardPJ />} />
 
+        {/* Global Pages */}
         <Route path="/feed" element={!user ? <Navigate to="/onboarding" replace /> : <Layout><Feed /></Layout>} />
         <Route path="/novo-pedido" element={!user ? <Navigate to="/onboarding" replace /> : <Layout><CreateRequest /></Layout>} />
         <Route path="/admin" element={<Admin />} />

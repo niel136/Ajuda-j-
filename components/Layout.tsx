@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Link, useLocation, Navigate } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Home, Grid, Plus, User, BarChart3 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import MascotAvatar from './MascotAvatar';
@@ -10,15 +10,9 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
   
   const isAuthPage = ['/login', '/signup', '/onboarding', '/tipo-conta', '/welcome'].includes(location.pathname);
-  const isPJ = profile?.tipo_usuario === 'PJ';
   
   if (isAuthPage) {
     return <div className="min-h-[100dvh] w-full bg-[#F6F6F6]">{children}</div>;
-  }
-
-  // Se for PJ, o layout é controlado pelo DashboardPJ.tsx para manter o estilo corporativo.
-  if (isPJ && location.pathname === '/') {
-    return <>{children}</>;
   }
 
   const isTabActive = (path: string) => location.pathname === path;
@@ -60,8 +54,8 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       <div className="fixed bottom-6 left-0 right-0 z-50 flex justify-center px-5 pointer-events-none">
         <nav className="bg-[#111111]/95 backdrop-blur-2xl rounded-[2.5rem] shadow-2xl border border-white/10 p-1.5 flex items-center justify-between w-full max-w-[380px] pointer-events-auto h-20">
           
-          <Link to="/" className={`flex-1 flex justify-center p-4 rounded-3xl transition-all ${isTabActive('/') ? 'text-[#C6F64E]' : 'text-white/30 hover:text-white'}`}>
-            <Home size={22} strokeWidth={isTabActive('/') ? 2.5 : 2} />
+          <Link to="/dashboard/pf" className={`flex-1 flex justify-center p-4 rounded-3xl transition-all ${isTabActive('/dashboard/pf') ? 'text-[#C6F64E]' : 'text-white/30 hover:text-white'}`}>
+            <Home size={22} strokeWidth={isTabActive('/dashboard/pf') ? 2.5 : 2} />
           </Link>
 
           <Link to="/feed" className={`flex-1 flex justify-center p-4 rounded-3xl transition-all ${isTabActive('/feed') ? 'text-[#C6F64E]' : 'text-white/30 hover:text-white'}`}>

@@ -1,15 +1,20 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import Button from '../components/Button';
-import { ArrowLeft, Building, Hash, Phone, Users, Landmark } from 'lucide-react';
+import { ArrowLeft, Building, Hash, Phone, Users, Landmark, Search, CheckCircle2, AlertCircle } from 'lucide-react';
+import { fetchCNPJData, validateCNPJFormat } from '../services/brasilApiService';
 
 const OnboardingPJ: React.FC = () => {
   const navigate = useNavigate();
   const { register, isLoading } = useApp();
   
   const [step, setStep] = useState(1);
+  const [isSearching, setIsSearching] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
+  const [isVerified, setIsVerified] = useState(false);
+
   const [formData, setFormData] = useState({
     name: '',
     cnpj: '',
@@ -19,29 +24,73 @@ const OnboardingPJ: React.FC = () => {
     responsavel: '',
     email: '',
     password: '',
-    telefone: ''
+    telefone: '',
+    // Dados da API
+    razao_social: '',
+    nome_fantasia: '',
+    situacao: '',
+    cnae_desc: '',
+    logradouro: '',
+    municipio: '',
+    uf: ''
   });
 
-  const validateCNPJ = (cnpj: string) => {
-    const clean = cnpj.replace(/\D/g, '');
-    return clean.length === 14;
+  // Efeito para disparar busca automática quando atingir 14 dígitos
+  useEffect(() => {
+    const cleanCnpj = formData.cnpj.replace(/\D/g, "");
+    if (cleanCnpj.length === 14 && validateCNPJFormat(cleanCnpj)) {
+      handleCnpjLookup(cleanCnpj);
+    } else {
+      setIsVerified(false);
+      setApiError(null);
+    }
+  }, [formData.cnpj]);
+
+  const handleCnpjLookup = async (cnpj: string) => {
+    setIsSearching(true);
+    setApiError(null);
+    try {
+      const data = await fetchCNPJData(cnpj);
+      setFormData(prev => ({
+        ...prev,
+        name: data.nome_fantasia || data.razao_social,
+        razao_social: data.razao_social,
+        nome_fantasia: data.nome_fantasia,
+        situacao: data.descricao_situacao_cadastral,
+        cnae_desc: data.cnae_fiscal_descricao,
+        logradouro: data.logradouro,
+        municipio: data.municipio,
+        uf: data.uf,
+        segmento: data.cnae_fiscal_descricao
+      }));
+      setIsVerified(true);
+    } catch (err: any) {
+      setApiError(err.message);
+      setIsVerified(false);
+    } finally {
+      setIsSearching(false);
+    }
   };
 
   const handleNext = () => {
-    if (step === 1 && (!formData.name || !validateCNPJ(formData.cnpj))) {
-      alert("Por favor, informe o nome e um CNPJ válido.");
+    if (!isVerified) {
+      alert("Por favor, informe um CNPJ válido e ativo antes de continuar.");
       return;
     }
-    setStep(step + 1);
+    setStep(2);
   };
 
   const handleFinish = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await register(formData.email, formData.password, formData.name, 'PJ', formData);
+      await register(formData.email, formData.password, formData.name, 'PJ', {
+        ...formData,
+        empresa_verificada: true,
+        fonte_validacao: 'BrasilAPI'
+      });
       navigate('/welcome');
-    } catch (e) {
-      alert("Erro ao cadastrar empresa.");
+    } catch (e: any) {
+      alert(e.message || "Erro ao cadastrar empresa.");
     }
   };
 
@@ -61,18 +110,39 @@ const OnboardingPJ: React.FC = () => {
         {step === 1 ? (
           <div className="space-y-4 animate-app-in">
             <div className="space-y-1">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Razão Social</label>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">CNPJ da Empresa</label>
               <div className="relative">
-                <Building className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
-                <input required placeholder="Nome da Empresa" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full h-14 bg-white rounded-2xl border border-slate-200 pl-12 pr-4 font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500 outline-none" />
+                <Hash className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
+                <input 
+                  required 
+                  placeholder="00.000.000/0000-00" 
+                  value={formData.cnpj} 
+                  onChange={e => setFormData({...formData, cnpj: e.target.value})} 
+                  className={`w-full h-14 bg-white rounded-2xl border ${apiError ? 'border-red-500' : 'border-slate-200'} pl-12 pr-12 font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500 outline-none`} 
+                />
+                <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                   {isSearching ? <div className="w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div> : 
+                    isVerified ? <CheckCircle2 className="text-emerald-500" size={20} /> : 
+                    <Search className="text-slate-200" size={20} />}
+                </div>
               </div>
+              {apiError && (
+                <div className="flex items-center gap-1 mt-2 text-red-500 text-[10px] font-bold uppercase tracking-tight">
+                  <AlertCircle size={12} /> {apiError}
+                </div>
+              )}
             </div>
 
             <div className="space-y-1">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">CNPJ</label>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Razão Social (Auto)</label>
               <div className="relative">
-                <Hash className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
-                <input required placeholder="00.000.000/0000-00" value={formData.cnpj} onChange={e => setFormData({...formData, cnpj: e.target.value})} className="w-full h-14 bg-white rounded-2xl border border-slate-200 pl-12 pr-4 font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500 outline-none" />
+                <Building className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
+                <input 
+                  readOnly
+                  placeholder="Aguardando CNPJ..." 
+                  value={formData.razao_social} 
+                  className="w-full h-14 bg-slate-100/50 rounded-2xl border border-slate-200 pl-12 pr-4 font-bold text-slate-500 outline-none" 
+                />
               </div>
             </div>
 
@@ -92,8 +162,28 @@ const OnboardingPJ: React.FC = () => {
                 </div>
               </div>
             </div>
+
+            {isVerified && (
+              <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100 animate-app-in">
+                <p className="text-[10px] font-black text-emerald-700 uppercase tracking-widest mb-1">Dados Localizados:</p>
+                <p className="text-[11px] font-bold text-emerald-800 leading-tight">
+                  {formData.logradouro}, {formData.municipio} - {formData.uf}<br/>
+                  <span className="opacity-60">{formData.cnae_desc}</span>
+                </p>
+              </div>
+            )}
             
-            <Button fullWidth variant="black" size="lg" className="mt-6 bg-indigo-600 h-16" type="button" onClick={handleNext}>Continuar</Button>
+            <Button 
+              fullWidth 
+              variant="black" 
+              size="lg" 
+              className={`mt-6 h-16 transition-all ${isVerified ? 'bg-indigo-600' : 'bg-slate-300'}`} 
+              type="button" 
+              onClick={handleNext}
+              disabled={!isVerified}
+            >
+              Continuar
+            </Button>
           </div>
         ) : (
           <div className="space-y-4 animate-app-in">
@@ -103,6 +193,7 @@ const OnboardingPJ: React.FC = () => {
             </div>
             <div className="space-y-1">
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Senha de Acesso</label>
+              {/* Fix: setPassword was used instead of setFormData for updating the password field */}
               <input required type="password" placeholder="••••••••" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} className="w-full h-14 bg-white rounded-2xl border border-slate-200 px-6 font-bold text-slate-900 outline-none" />
             </div>
             <div className="space-y-1">

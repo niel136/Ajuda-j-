@@ -12,6 +12,11 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
+      :root {
+        --pj-navy: #0F172A;
+        --pj-blue: #1E3A8A;
+        --pj-slate: #F1F5F9;
+      }
       body { 
         font-family: 'Plus Jakarta Sans', sans-serif; 
         background-color: #F6F6F6; 
@@ -28,6 +33,7 @@
         display: flex; 
         flex-direction: column;
         width: 100%;
+        max-width: 100vw;
         overflow-x: hidden;
       }
       .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
@@ -75,6 +81,22 @@
       * {
         max-width: 100vw;
         box-sizing: border-box;
+      }
+
+      /* Ajustes para Dashboard PJ */
+      .bg-pj-navy { background-color: var(--pj-navy); }
+      .text-pj-navy { color: var(--pj-navy); }
+      .bg-pj-slate { background-color: var(--pj-slate); }
+      
+      .custom-scrollbar::-webkit-scrollbar {
+        width: 4px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: rgba(0,0,0,0.1);
+        border-radius: 10px;
       }
     </style>
   <script type="importmap">

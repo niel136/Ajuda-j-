@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, Navigate } from 'react-router-dom';
 import { Home, Grid, Plus, User, BarChart3 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import MascotAvatar from './MascotAvatar';
@@ -10,9 +10,15 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
   
   const isAuthPage = ['/login', '/signup', '/onboarding', '/tipo-conta', '/welcome'].includes(location.pathname);
+  const isPJ = profile?.tipo_usuario === 'PJ';
   
   if (isAuthPage) {
     return <div className="min-h-[100dvh] w-full bg-[#F6F6F6]">{children}</div>;
+  }
+
+  // Se for PJ, o layout é controlado pelo DashboardPJ.tsx para manter o estilo corporativo.
+  if (isPJ && location.pathname === '/') {
+    return <>{children}</>;
   }
 
   const isTabActive = (path: string) => location.pathname === path;

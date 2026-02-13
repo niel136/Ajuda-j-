@@ -1,6 +1,6 @@
 
-import React, { Suspense, lazy, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import React, { Suspense, lazy } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AppProvider, useApp } from './context/AppContext';
 import { NotificationProvider } from './context/NotificationContext';
 import Layout from './components/Layout';
@@ -55,15 +55,18 @@ const AppRoutes = () => {
         {/* Dashboard Dinâmico */}
         <Route path="/" element={<HomeRedirect />} />
         
-        <Route path="/feed" element={!user ? <Navigate to="/onboarding" replace /> : <Feed />} />
-        <Route path="/novo-pedido" element={!user ? <Navigate to="/onboarding" replace /> : <CreateRequest />} />
+        {/* Rota Explícita para o Dashboard de Empresa (PJ) */}
+        <Route path="/dashboard-empresa" element={profile?.tipo_usuario === 'PJ' ? <DashboardPJ /> : <Navigate to="/" replace />} />
+
+        <Route path="/feed" element={!user ? <Navigate to="/onboarding" replace /> : <Layout><Feed /></Layout>} />
+        <Route path="/novo-pedido" element={!user ? <Navigate to="/onboarding" replace /> : <Layout><CreateRequest /></Layout>} />
         <Route path="/admin" element={<Admin />} />
-        <Route path="/perfil" element={!user ? <Navigate to="/onboarding" replace /> : <Profile />} />
-        <Route path="/perfil/editar" element={!user ? <Navigate to="/onboarding" replace /> : <EditProfile />} />
-        <Route path="/convidar" element={!user ? <Navigate to="/onboarding" replace /> : <InviteFriends />} />
-        <Route path="/historico" element={!user ? <Navigate to="/onboarding" replace /> : <DonationHistory />} />
-        <Route path="/impacto" element={!user ? <Navigate to="/onboarding" replace /> : <Impact />} />
-        <Route path="/pagamentos" element={!user ? <Navigate to="/onboarding" replace /> : <Payments />} />
+        <Route path="/perfil" element={!user ? <Navigate to="/onboarding" replace /> : <Layout><Profile /></Layout>} />
+        <Route path="/perfil/editar" element={!user ? <Navigate to="/onboarding" replace /> : <Layout><EditProfile /></Layout>} />
+        <Route path="/convidar" element={!user ? <Navigate to="/onboarding" replace /> : <Layout><InviteFriends /></Layout>} />
+        <Route path="/historico" element={!user ? <Navigate to="/onboarding" replace /> : <Layout><DonationHistory /></Layout>} />
+        <Route path="/impacto" element={!user ? <Navigate to="/onboarding" replace /> : <Layout><Impact /></Layout>} />
+        <Route path="/pagamentos" element={!user ? <Navigate to="/onboarding" replace /> : <Layout><Payments /></Layout>} />
         
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
@@ -77,9 +80,7 @@ const App = () => {
       <NotificationProvider>
         <AppProvider>
           <Router>
-            <Layout>
-              <AppRoutes />
-            </Layout>
+            <AppRoutes />
           </Router>
         </AppProvider>
       </NotificationProvider>

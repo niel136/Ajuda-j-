@@ -1,6 +1,7 @@
 
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+// Fixed: Changed import source from react-router-dom to react-router to resolve missing export errors
+import { Link, useLocation } from 'react-router';
 import { Home, Grid, Plus, User, BarChart3 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import MascotAvatar from './MascotAvatar';

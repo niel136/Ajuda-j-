@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+// Fixed: Changed import source from react-router-dom to react-router
+import { useNavigate } from 'react-router';
 import { useApp } from '../context/AppContext';
 import Button from '../components/Button';
 import { ArrowLeft, Building, Hash, Phone, Users, Landmark, Search, CheckCircle2, AlertCircle } from 'lucide-react';
@@ -193,7 +194,6 @@ const OnboardingPJ: React.FC = () => {
             </div>
             <div className="space-y-1">
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Senha de Acesso</label>
-              {/* Fix: setPassword was used instead of setFormData for updating the password field */}
               <input required type="password" placeholder="••••••••" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} className="w-full h-14 bg-white rounded-2xl border border-slate-200 px-6 font-bold text-slate-900 outline-none" />
             </div>
             <div className="space-y-1">

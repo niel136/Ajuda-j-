@@ -5,13 +5,13 @@ import Button from '../components/Button';
 import { 
   Check, X, Info, AlertTriangle, ShieldCheck, 
   Users, Building2, TrendingUp, DollarSign, 
-  Activity, Search, Filter, Lock, Trash2
+  Activity, Search, Filter, Lock, Trash2, LogOut
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import LoadingScreen from '../components/LoadingScreen';
 
 const Admin: React.FC = () => {
-  const { profile, requests, moderateRequest, verifyUser, globalImpact } = useApp();
+  const { profile, requests, moderateRequest, verifyUser, globalImpact, logout } = useApp();
   const [allUsers, setAllUsers] = useState<any[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [tab, setTab] = useState<'requests' | 'users' | 'stats'>('stats');
@@ -27,37 +27,36 @@ const Admin: React.FC = () => {
     setLoadingUsers(false);
   };
 
-  if (profile?.tipo_usuario !== 'ADM' && profile?.tipo_conta !== 'admin') {
+  // Verificação de segurança (segunda camada)
+  if (profile?.tipo_usuario !== 'ADM') {
     return (
       <div className="min-h-screen bg-[#0B0F19] flex flex-col items-center justify-center p-8 text-center">
         <div className="w-20 h-20 bg-red-500/10 text-red-500 rounded-3xl flex items-center justify-center mb-6">
            <Lock size={40} />
         </div>
         <h1 className="text-2xl font-black text-white tracking-tighter">Acesso Restrito</h1>
-        <p className="text-gray-500 font-bold text-sm mt-2">Somente administradores podem acessar esta área.</p>
-        <Button variant="outline" className="mt-8 border-white/10 text-white" onClick={() => window.location.href = '/'}>Voltar para Home</Button>
+        <p className="text-gray-500 font-bold text-sm mt-2">Somente administradores autorizados.</p>
+        <Button variant="outline" className="mt-8 border-white/10 text-white" onClick={logout}>Sair da Conta</Button>
       </div>
     );
   }
 
   const pendingRequests = requests.filter(r => r.status === 'EM_ANALISE' || r.status === 'EM_ANALISE_CRITICA');
-  const pfCount = allUsers.filter(u => u.tipo_usuario === 'PF').length;
-  const pjCount = allUsers.filter(u => u.tipo_usuario === 'PJ').length;
 
   return (
-    <div className="animate-app-in min-h-screen bg-[#0B0F19] -mx-5 -my-4 px-6 pt-10 pb-20 text-white">
+    <div className="animate-app-in min-h-screen bg-[#0B0F19] px-6 pt-10 pb-20 text-white overflow-x-hidden">
       {/* HEADER ADM */}
       <header className="mb-10 flex justify-between items-end">
         <div>
           <h2 className="text-4xl font-black tracking-tighter">Admin <span className="text-[#C6F64E]">Center</span></h2>
           <div className="flex items-center gap-2 mt-2">
             <div className="w-2 h-2 bg-[#C6F64E] rounded-full animate-pulse"></div>
-            <span className="text-[10px] font-black text-white/30 uppercase tracking-[0.3em]">Real-time Monitor</span>
+            <span className="text-[10px] font-black text-white/30 uppercase tracking-[0.3em]">Sistema de Auditoria</span>
           </div>
         </div>
-        <div className="bg-white/5 p-3 rounded-2xl">
-          <Activity className="text-[#C6F64E]" size={20} />
-        </div>
+        <button onClick={logout} className="bg-white/5 p-3 rounded-2xl text-red-400 hover:bg-red-500/20 transition-all">
+          <LogOut size={20} />
+        </button>
       </header>
 
       {/* TABS */}
@@ -70,7 +69,7 @@ const Admin: React.FC = () => {
           <button 
             key={t.id} 
             onClick={() => setTab(t.id as any)}
-            className={`flex items-center gap-2 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${tab === t.id ? 'bg-[#C6F64E] text-black' : 'text-white/40 hover:text-white'}`}
+            className={`flex items-center gap-2 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shrink-0 ${tab === t.id ? 'bg-[#C6F64E] text-black' : 'text-white/40 hover:text-white'}`}
           >
             <t.icon size={14} /> {t.label}
           </button>
@@ -80,7 +79,7 @@ const Admin: React.FC = () => {
       {/* DASHBOARD STATS */}
       {tab === 'stats' && (
         <div className="space-y-6">
-           <div className="grid grid-cols-2 gap-4">
+           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="bg-white/5 p-8 rounded-[2.5rem] border border-white/5">
                  <DollarSign className="text-green-500 mb-4" size={24} />
                  <p className="text-[10px] font-black text-white/30 uppercase tracking-widest">Receita Bruta</p>
@@ -98,14 +97,14 @@ const Admin: React.FC = () => {
                  <p className="text-[10px] font-black text-white/30 uppercase tracking-widest">Distribuição de Contas</p>
                  <Users size={16} className="text-white/20" />
               </div>
-              <div className="flex gap-4 items-end">
+              <div className="flex flex-col sm:flex-row gap-6">
                   <div className="flex-1 space-y-2">
                      <div className="h-4 bg-blue-500 rounded-full w-full"></div>
-                     <span className="text-[9px] font-black uppercase">PF: 68%</span>
+                     <span className="text-[9px] font-black uppercase">Doador (PF): Ativo</span>
                   </div>
                   <div className="flex-1 space-y-2">
                      <div className="h-4 bg-indigo-600 rounded-full w-1/3"></div>
-                     <span className="text-[9px] font-black uppercase">PJ: 32%</span>
+                     <span className="text-[9px] font-black uppercase">Empresa (PJ): Auditoria</span>
                   </div>
               </div>
            </div>
@@ -117,7 +116,7 @@ const Admin: React.FC = () => {
         <div className="space-y-4">
           {pendingRequests.length === 0 ? (
             <div className="p-20 text-center border-2 border-dashed border-white/5 rounded-[2.5rem]">
-              <p className="text-white/20 font-black uppercase text-xs">Fila de pedidos vazia</p>
+              <p className="text-white/20 font-black uppercase text-xs">Fila de pedidos limpa</p>
             </div>
           ) : (
             pendingRequests.map(req => (

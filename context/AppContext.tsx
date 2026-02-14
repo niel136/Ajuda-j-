@@ -38,15 +38,26 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [authChecked, setAuthChecked] = useState(false);
   const [globalImpact] = useState(APP_IMPACT_STATS);
   
-  const hasInitialized = useRef(false);
+  const initPromiseRef = useRef<Promise<void> | null>(null);
 
   const fetchProfile = useCallback(async (userId: string) => {
-    if (!userId) return;
+    if (!userId) return null;
     try {
-      const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single();
-      if (!error && data) setProfile(data as UserProfile);
+      console.debug('[Auth] Fetching profile for:', userId);
+      const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle();
+      if (error) {
+        console.error('[Auth] Profile fetch error:', error);
+        return null;
+      }
+      if (data) {
+        console.debug('[Auth] Profile loaded:', data.tipo_usuario);
+        setProfile(data as UserProfile);
+        return data as UserProfile;
+      }
+      return null;
     } catch (e) {
-      console.warn('Profile fetch failed:', e);
+      console.warn('[Auth] Profile fetch failed exception:', e);
+      return null;
     }
   }, []);
 
@@ -62,11 +73,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   }, []);
 
+  // Inicialização Unificada
   useEffect(() => {
-    if (hasInitialized.current) return;
-    hasInitialized.current = true;
+    if (initPromiseRef.current) return;
 
-    const initAuth = async () => {
+    const init = async () => {
+      console.debug('[Auth] Initializing App Session...');
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user) {
@@ -74,22 +86,28 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           await fetchProfile(session.user.id);
         }
       } catch (e) {
-        console.error("Auth init error:", e);
+        console.error("[Auth] Session init error:", e);
       } finally {
+        console.debug('[Auth] Auth state checked.');
         setAuthChecked(true);
       }
       fetchRequests();
     };
 
-    initAuth();
+    initPromiseRef.current = init();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: any, session: any) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.debug(`[Auth] Auth Event: ${event}`);
       const currentUser = session?.user || null;
-      setUser(currentUser);
-      if (currentUser) {
-        fetchProfile(currentUser.id);
-      } else {
+      
+      if (event === 'SIGNED_IN') {
+        setUser(currentUser);
+        if (currentUser) await fetchProfile(currentUser.id);
+        setAuthChecked(true);
+      } else if (event === 'SIGNED_OUT') {
+        setUser(null);
         setProfile(null);
+        setAuthChecked(true);
       }
     });
 
@@ -100,11 +118,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const login = async (e: string, p: string) => {
     setIsLoading(true);
+    setAuthChecked(false); // Reseta para garantir novo check de rota
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email: e, password: p });
+      const { data, error } = await supabase.auth.signInWithPassword({ email: e, password: p });
       if (error) throw error;
+      if (data.user) {
+        await fetchProfile(data.user.id);
+      }
     } finally {
       setIsLoading(false);
+      setAuthChecked(true);
     }
   };
 
@@ -130,32 +153,38 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         const taxa = userType === 'PJ' ? 10 : 5;
         const status = userType === 'PJ' ? 'PENDENTE' : 'VERIFICADO';
         
-        await supabase.from('profiles').upsert({
+        const newProfile = {
           id: data.user.id, 
           nome: n, 
           tipo_usuario: userType,
-          tipo_conta: userType === 'PJ' ? 'business' : 'donor',
+          tipo_conta: userType === 'PJ' ? 'business' : (userType === 'ADM' ? 'admin' : 'donor'),
           avatar_seed: Math.random().toString(36).substring(7),
           taxa_percentual: taxa,
           status_verificacao: status,
           cnpj: onboardingData?.cnpj || null,
           metadata_onboarding: onboardingData || {},
           created_at: new Date().toISOString()
-        });
+        };
+
+        await supabase.from('profiles').upsert(newProfile);
+        setProfile(newProfile as any);
       }
     } finally {
       setIsLoading(false);
+      setAuthChecked(true);
     }
   };
 
   const logout = async () => {
     try {
+      setAuthChecked(false);
       await supabase.auth.signOut();
       setUser(null);
       setProfile(null);
-      window.location.href = '/onboarding';
     } catch (e) {
-      window.location.reload();
+      console.error("Logout failed", e);
+    } finally {
+      setAuthChecked(true);
     }
   };
 
@@ -177,7 +206,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const processDonation = async (requestId: string, amount: number) => {
     if (!user) throw new Error("Ação requer login");
     
-    // Simulação de cálculo de taxa no momento da doação
     const taxaValue = (amount * (profile?.taxa_percentual || 5)) / 100;
     
     const { error: donationError } = await supabase.from('doacoes').insert({

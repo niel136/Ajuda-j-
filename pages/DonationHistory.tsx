@@ -1,6 +1,7 @@
 
 import React, { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+// Fixed: Changed import source from react-router-dom to react-router
+import { useNavigate } from 'react-router';
 import { useApp } from '../context/AppContext';
 import { ArrowLeft, Heart, Calendar, DollarSign, ExternalLink } from 'lucide-react';
 import LoadingScreen from '../components/LoadingScreen';

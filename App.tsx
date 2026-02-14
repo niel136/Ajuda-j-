@@ -1,6 +1,7 @@
 
 import React, { Suspense, lazy } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+// Fixed: Changed import source from react-router-dom to react-router
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router';
 import { AppProvider, useApp } from './context/AppContext';
 import { NotificationProvider } from './context/NotificationContext';
 import Layout from './components/Layout';
@@ -26,51 +27,89 @@ const Impact = lazy(() => import('./pages/Impact'));
 const Payments = lazy(() => import('./pages/Payments'));
 const Onboarding = lazy(() => import('./pages/Onboarding'));
 
+// Componente de Proteção de Rota Unificado
+const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode, allowedRoles?: string[] }) => {
+  const { user, profile, authChecked } = useApp();
+  const location = useLocation();
+
+  if (!authChecked) return <LoadingScreen />;
+
+  if (!user) {
+    return <Navigate to="/onboarding" state={{ from: location }} replace />;
+  }
+
+  if (allowedRoles && profile && !allowedRoles.includes(profile.tipo_usuario)) {
+    // Redireciona para sua respectiva home caso tente acessar área proibida
+    if (profile.tipo_usuario === 'ADM') return <Navigate to="/admin" replace />;
+    if (profile.tipo_usuario === 'PJ') return <Navigate to="/dashboard/pj" replace />;
+    return <Navigate to="/dashboard/pf" replace />;
+  }
+
+  return <>{children}</>;
+};
+
 const AppRoutes = () => {
   const { user, profile, authChecked } = useApp();
 
   if (!authChecked) return <LoadingScreen />;
 
-  // Central Hub: Decide qual dashboard abrir baseado no perfil
-  const DashboardSelector = () => {
+  // Home Logic: Decide onde o usuário cai ao entrar no "/"
+  const getHomeElement = () => {
     if (!user) return <Navigate to="/onboarding" replace />;
-    if (profile?.tipo_usuario === 'ADM') return <Navigate to="/admin" replace />;
-    if (profile?.tipo_usuario === 'PJ') return <Navigate to="/dashboard/pj" replace />;
+    if (!profile) return <Navigate to="/welcome" replace />; // Se autenticado mas sem perfil completo
+    
+    if (profile.tipo_usuario === 'ADM') return <Navigate to="/admin" replace />;
+    if (profile.tipo_usuario === 'PJ') return <Navigate to="/dashboard/pj" replace />;
     return <Navigate to="/dashboard/pf" replace />;
   };
 
   return (
     <Suspense fallback={<LoadingScreen />}>
       <Routes>
+        {/* Public Routes */}
         <Route path="/onboarding" element={user ? <Navigate to="/" replace /> : <Onboarding />} />
         <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />
         <Route path="/signup" element={user ? <Navigate to="/" replace /> : <Signup />} />
-        <Route path="/welcome" element={!user ? <Navigate to="/onboarding" replace /> : <Welcome />} />
         
-        {/* Onboarding Flow */}
-        <Route path="/tipo-conta" element={user ? <AccountTypeSelection /> : <Navigate to="/onboarding" replace />} />
-        <Route path="/onboarding-pf" element={user ? <OnboardingPF /> : <Navigate to="/onboarding" replace />} />
-        <Route path="/onboarding-pj" element={user ? <OnboardingPJ /> : <Navigate to="/onboarding" replace />} />
+        {/* Entry Point */}
+        <Route path="/" element={getHomeElement()} />
 
-        {/* Home redirection */}
-        <Route path="/" element={<DashboardSelector />} />
-        
-        {/* MODULE: PF (Pessoa Física) */}
-        <Route path="/dashboard/pf" element={<Layout><DashboardPF /></Layout>} />
-        
-        {/* MODULE: PJ (Pessoa Jurídica) */}
-        <Route path="/dashboard/pj" element={<DashboardPJ />} />
+        {/* Auth Required Routes */}
+        <Route path="/welcome" element={<ProtectedRoute><Welcome /></ProtectedRoute>} />
+        <Route path="/tipo-conta" element={<ProtectedRoute><AccountTypeSelection /></ProtectedRoute>} />
+        <Route path="/onboarding-pf" element={<ProtectedRoute><OnboardingPF /></ProtectedRoute>} />
+        <Route path="/onboarding-pj" element={<ProtectedRoute><OnboardingPJ /></ProtectedRoute>} />
 
-        {/* Global Pages */}
-        <Route path="/feed" element={!user ? <Navigate to="/onboarding" replace /> : <Layout><Feed /></Layout>} />
-        <Route path="/novo-pedido" element={!user ? <Navigate to="/onboarding" replace /> : <Layout><CreateRequest /></Layout>} />
-        <Route path="/admin" element={<Admin />} />
-        <Route path="/perfil" element={!user ? <Navigate to="/onboarding" replace /> : <Layout><Profile /></Layout>} />
-        <Route path="/perfil/editar" element={!user ? <Navigate to="/onboarding" replace /> : <Layout><EditProfile /></Layout>} />
-        <Route path="/convidar" element={!user ? <Navigate to="/onboarding" replace /> : <Layout><InviteFriends /></Layout>} />
-        <Route path="/historico" element={!user ? <Navigate to="/onboarding" replace /> : <Layout><DonationHistory /></Layout>} />
-        <Route path="/impacto" element={!user ? <Navigate to="/onboarding" replace /> : <Layout><Impact /></Layout>} />
-        <Route path="/pagamentos" element={!user ? <Navigate to="/onboarding" replace /> : <Layout><Payments /></Layout>} />
+        {/* Module PF */}
+        <Route path="/dashboard/pf" element={
+          <ProtectedRoute allowedRoles={['PF']}>
+            <Layout><DashboardPF /></Layout>
+          </ProtectedRoute>
+        } />
+        
+        {/* Module PJ */}
+        <Route path="/dashboard/pj" element={
+          <ProtectedRoute allowedRoles={['PJ']}>
+            <DashboardPJ />
+          </ProtectedRoute>
+        } />
+
+        {/* Admin Center */}
+        <Route path="/admin" element={
+          <ProtectedRoute allowedRoles={['ADM']}>
+            <Admin />
+          </ProtectedRoute>
+        } />
+
+        {/* Common Authenticated Pages */}
+        <Route path="/feed" element={<ProtectedRoute><Layout><Feed /></Layout></ProtectedRoute>} />
+        <Route path="/novo-pedido" element={<ProtectedRoute><Layout><CreateRequest /></Layout></ProtectedRoute>} />
+        <Route path="/perfil" element={<ProtectedRoute><Layout><Profile /></Layout></ProtectedRoute>} />
+        <Route path="/perfil/editar" element={<ProtectedRoute><Layout><EditProfile /></Layout></ProtectedRoute>} />
+        <Route path="/convidar" element={<ProtectedRoute><Layout><InviteFriends /></Layout></ProtectedRoute>} />
+        <Route path="/historico" element={<ProtectedRoute><Layout><DonationHistory /></Layout></ProtectedRoute>} />
+        <Route path="/impacto" element={<ProtectedRoute><Layout><Impact /></Layout></ProtectedRoute>} />
+        <Route path="/pagamentos" element={<ProtectedRoute><Layout><Payments /></Layout></ProtectedRoute>} />
         
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

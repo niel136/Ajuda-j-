@@ -1,7 +1,6 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
-// Added Zap to imports to resolve "Cannot find name 'Zap'" error
 import { 
   Building2, TrendingUp, ShieldCheck, Download, Users, Landmark, 
   FileText, ChevronRight, LayoutDashboard, History, FileStack, 
@@ -10,7 +9,8 @@ import {
 } from 'lucide-react';
 import LoadingScreen from '../components/LoadingScreen';
 import Button from '../components/Button';
-import { Navigate } from 'react-router-dom';
+// Fixed: Changed import source from react-router-dom to react-router
+import { Navigate } from 'react-router';
 
 const DashboardPJ: React.FC = () => {
   const { profile, donations, fetchDonations, isLoading, logout } = useApp();
@@ -238,6 +238,7 @@ const DashboardPJ: React.FC = () => {
                                 <td className="px-8 py-6 font-bold text-slate-400 text-xs">{new Date(d.created_at).toLocaleDateString()}</td>
                                 <td className="px-8 py-6 font-black text-slate-900 text-sm">{d.pedidos_ajuda?.titulo}</td>
                                 <td className="px-8 py-6 font-bold text-slate-600">R$ {d.valor}</td>
+                                <td className="px-8 py-6 font-bold text-red-500 text-xs">-{stats.taxRate}%</td>
                                 <td className="px-8 py-6 font-black text-blue-600 text-right">R$ {(d.valor * (1 - stats.taxRate / 100)).toFixed(2)}</td>
                              </tr>
                            ))}

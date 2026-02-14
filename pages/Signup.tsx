@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+// Fixed: Changed import source from react-router-dom to react-router
+import { useNavigate, Link } from 'react-router';
 import { useApp } from '../context/AppContext';
 import Button from '../components/Button';
 import { ArrowLeft, User, Mail, Lock } from 'lucide-react';

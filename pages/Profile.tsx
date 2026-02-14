@@ -8,7 +8,8 @@ import {
   Bell, LogOut, ChevronRight, Settings, 
   History, Heart, CreditCard, Share2
 } from 'lucide-react';
-import { useNavigate, Link } from 'react-router-dom';
+// Fixed: Changed import source from react-router-dom to react-router
+import { useNavigate, Link } from 'react-router';
 import { supabase } from '../lib/supabase';
 
 const Profile: React.FC = () => {

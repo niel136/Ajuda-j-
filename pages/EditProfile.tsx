@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+// Fixed: Changed import source from react-router-dom to react-router
+import { useNavigate } from 'react-router';
 import { useApp } from '../context/AppContext';
 import { uploadFile } from '../lib/supabase';
 import Button from '../components/Button';

@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+// Fixed: Changed import source from react-router-dom to react-router
+import { useNavigate } from 'react-router';
 import Button from '../components/Button';
 import MascotAvatar from '../components/MascotAvatar';
 import { ChevronRight, Heart, ShieldCheck, Zap } from 'lucide-react';

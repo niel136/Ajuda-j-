@@ -1,6 +1,7 @@
 
 import React from 'react';
-import { Link, Navigate } from 'react-router-dom';
+// Fixed: Changed import source from react-router-dom to react-router
+import { Link } from 'react-router';
 import { Heart, PlusCircle, Settings, Zap, Users, ShieldCheck } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import RequestCard from '../../components/RequestCard';
@@ -11,11 +12,6 @@ const DashboardPF: React.FC = () => {
   const { user, profile, requests, isLoading } = useApp();
   
   if (isLoading) return <LoadingScreen />;
-
-  // Force protection
-  if (profile?.tipo_usuario !== 'PF') {
-    return <Navigate to="/dashboard/pj" replace />;
-  }
 
   const firstName = profile?.nome?.split(' ')[0] || user?.email?.split('@')[0] || 'Visitante';
 

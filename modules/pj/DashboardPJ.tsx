@@ -5,11 +5,10 @@ import {
   Building2, TrendingUp, ShieldCheck, Download, Users, Landmark, 
   FileText, LayoutDashboard, History, FileStack, 
   Settings, LogOut, Search, Filter, ArrowUpRight, Award, 
-  AlertCircle, Menu, Zap, BarChart3
+  AlertCircle, Menu, X, Zap, BarChart3
 } from 'lucide-react';
 import LoadingScreen from '../../components/LoadingScreen';
 import Button from '../../components/Button';
-import { Navigate } from 'react-router-dom';
 
 const DashboardPJ: React.FC = () => {
   const { profile, donations, fetchDonations, isLoading, logout } = useApp();
@@ -23,14 +22,9 @@ const DashboardPJ: React.FC = () => {
 
   if (isLoading) return <LoadingScreen />;
 
-  // Force protection
-  if (profile?.tipo_usuario !== 'PJ') {
-    return <Navigate to="/dashboard/pf" replace />;
-  }
-
   const companyScore = useMemo(() => {
     if (!profile) return 0;
-    let score = 40; // Base score
+    let score = 40; 
     if (profile.status_verificacao === 'VERIFICADO') score += 40;
     score += Math.min(20, (profile.donations_count || 0) * 2);
     return score;

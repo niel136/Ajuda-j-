@@ -1,15 +1,14 @@
 
 import React, { useState, useEffect } from 'react';
-// Fixed: Changed import source from react-router-dom to react-router
 import { useNavigate } from 'react-router';
 import { useApp } from '../context/AppContext';
 import Button from '../components/Button';
-import { ArrowLeft, Building, Hash, Phone, Users, Landmark, Search, CheckCircle2, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Building, Hash, Phone, Users, Landmark, Search, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import { fetchCNPJData, validateCNPJFormat } from '../services/brasilApiService';
 
 const OnboardingPJ: React.FC = () => {
   const navigate = useNavigate();
-  const { register, isLoading } = useApp();
+  const { register, isLoading: isRegistering } = useApp();
   
   const [step, setStep] = useState(1);
   const [isSearching, setIsSearching] = useState(false);
@@ -36,20 +35,46 @@ const OnboardingPJ: React.FC = () => {
     uf: ''
   });
 
-  // Efeito para disparar busca automática quando atingir 14 dígitos
+  // Busca automática com Debounce
   useEffect(() => {
     const cleanCnpj = formData.cnpj.replace(/\D/g, "");
-    if (cleanCnpj.length === 14 && validateCNPJFormat(cleanCnpj)) {
-      handleCnpjLookup(cleanCnpj);
-    } else {
-      setIsVerified(false);
+    
+    // Se o usuário apagou dígitos, reseta o estado de erro e verificação
+    if (cleanCnpj.length < 14) {
       setApiError(null);
+      setIsVerified(false);
+      if (formData.razao_social) {
+        setFormData(prev => ({ ...prev, razao_social: '', name: '' }));
+      }
+      return;
+    }
+
+    // Se atingiu 14 dígitos, inicia o timer do debounce
+    if (cleanCnpj.length === 14) {
+      const timer = setTimeout(() => {
+        if (validateCNPJFormat(cleanCnpj)) {
+          handleCnpjLookup(cleanCnpj);
+        } else {
+          setApiError("Formato de CNPJ inválido.");
+          setIsVerified(false);
+        }
+      }, 600); // 600ms de debounce para garantir que o usuário terminou de digitar/colar
+
+      return () => clearTimeout(timer);
+    }
+    
+    // Caso o usuário digite mais que 14 (erro de digitação)
+    if (cleanCnpj.length > 14) {
+       setApiError("CNPJ deve ter apenas 14 dígitos.");
+       setIsVerified(false);
     }
   }, [formData.cnpj]);
 
   const handleCnpjLookup = async (cnpj: string) => {
     setIsSearching(true);
     setApiError(null);
+    console.log(`[OnboardingPJ] Disparando busca para: ${cnpj}`);
+    
     try {
       const data = await fetchCNPJData(cnpj);
       setFormData(prev => ({
@@ -65,19 +90,19 @@ const OnboardingPJ: React.FC = () => {
         segmento: data.cnae_fiscal_descricao
       }));
       setIsVerified(true);
+      console.log(`[OnboardingPJ] Empresa verificada: ${data.razao_social}`);
     } catch (err: any) {
-      setApiError(err.message);
+      console.error(`[OnboardingPJ] Erro na busca:`, err.message);
+      setApiError(err.message || "Erro ao consultar CNPJ.");
       setIsVerified(false);
+      setFormData(prev => ({ ...prev, razao_social: '' }));
     } finally {
       setIsSearching(false);
     }
   };
 
   const handleNext = () => {
-    if (!isVerified) {
-      alert("Por favor, informe um CNPJ válido e ativo antes de continuar.");
-      return;
-    }
+    if (!isVerified) return;
     setStep(2);
   };
 
@@ -98,51 +123,57 @@ const OnboardingPJ: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-50 p-8 flex flex-col pt-safe">
       <header className="mb-10 flex items-center gap-4">
-        <button onClick={() => step > 1 ? setStep(step - 1) : navigate('/tipo-conta')} className="p-2 bg-white rounded-xl shadow-sm">
+        <button 
+          onClick={() => step > 1 ? setStep(step - 1) : navigate('/tipo-conta')} 
+          className="p-2 bg-white rounded-xl shadow-sm active:scale-95 transition-transform"
+        >
           <ArrowLeft size={20} />
         </button>
         <div>
-          <h2 className="text-2xl font-black text-slate-900 tracking-tighter">Onboarding PJ</h2>
+          <h2 className="text-2xl font-black text-slate-900 tracking-tighter">Parceria PJ</h2>
           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Passo {step} de 2</p>
         </div>
       </header>
 
       <form onSubmit={handleFinish} className="flex-1 flex flex-col gap-6">
         {step === 1 ? (
-          <div className="space-y-4 animate-app-in">
+          <div className="space-y-5 animate-app-in">
+            {/* INPUT CNPJ */}
             <div className="space-y-1">
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">CNPJ da Empresa</label>
               <div className="relative">
                 <Hash className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
                 <input 
                   required 
+                  type="text"
                   placeholder="00.000.000/0000-00" 
                   value={formData.cnpj} 
                   onChange={e => setFormData({...formData, cnpj: e.target.value})} 
-                  className={`w-full h-14 bg-white rounded-2xl border ${apiError ? 'border-red-500' : 'border-slate-200'} pl-12 pr-12 font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500 outline-none`} 
+                  className={`w-full h-16 bg-white rounded-2xl border ${apiError ? 'border-red-500' : (isVerified ? 'border-emerald-500' : 'border-slate-200')} pl-12 pr-12 font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500 outline-none transition-all`} 
                 />
                 <div className="absolute right-4 top-1/2 -translate-y-1/2">
-                   {isSearching ? <div className="w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div> : 
+                   {isSearching ? <Loader2 className="text-indigo-500 animate-spin" size={20} /> : 
                     isVerified ? <CheckCircle2 className="text-emerald-500" size={20} /> : 
                     <Search className="text-slate-200" size={20} />}
                 </div>
               </div>
               {apiError && (
-                <div className="flex items-center gap-1 mt-2 text-red-500 text-[10px] font-bold uppercase tracking-tight">
+                <div className="flex items-center gap-1.5 mt-2 text-red-500 text-[10px] font-bold uppercase tracking-tight px-1">
                   <AlertCircle size={12} /> {apiError}
                 </div>
               )}
             </div>
 
+            {/* INPUT RAZÃO SOCIAL (AUTO-FILL) */}
             <div className="space-y-1">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Razão Social (Auto)</label>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Razão Social</label>
               <div className="relative">
                 <Building className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
                 <input 
                   readOnly
-                  placeholder="Aguardando CNPJ..." 
+                  placeholder={isSearching ? "Buscando dados na Receita..." : "Aguardando CNPJ válido..."}
                   value={formData.razao_social} 
-                  className="w-full h-14 bg-slate-100/50 rounded-2xl border border-slate-200 pl-12 pr-4 font-bold text-slate-500 outline-none" 
+                  className={`w-full h-16 rounded-2xl border border-slate-200 pl-12 pr-4 font-bold outline-none transition-all ${isSearching ? 'bg-indigo-50/30 text-indigo-400' : 'bg-slate-100/50 text-slate-500'}`} 
                 />
               </div>
             </div>
@@ -152,58 +183,75 @@ const OnboardingPJ: React.FC = () => {
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Funcionários</label>
                 <div className="relative">
                   <Users className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
-                  <input placeholder="Ex: 50" type="number" value={formData.employees} onChange={e => setFormData({...formData, employees: e.target.value})} className="w-full h-14 bg-white rounded-2xl border border-slate-200 pl-12 pr-4 font-bold text-slate-900 outline-none" />
+                  <input placeholder="Ex: 50" type="number" value={formData.employees} onChange={e => setFormData({...formData, employees: e.target.value})} className="w-full h-16 bg-white rounded-2xl border border-slate-200 pl-12 pr-4 font-bold text-slate-900 outline-none" />
                 </div>
               </div>
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Faturamento</label>
                 <div className="relative">
                   <Landmark className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
-                  <input placeholder="Mensal R$" value={formData.faturamento} onChange={e => setFormData({...formData, faturamento: e.target.value})} className="w-full h-14 bg-white rounded-2xl border border-slate-200 pl-12 pr-4 font-bold text-slate-900 outline-none" />
+                  <input placeholder="Mensal R$" value={formData.faturamento} onChange={e => setFormData({...formData, faturamento: e.target.value})} className="w-full h-16 bg-white rounded-2xl border border-slate-200 pl-12 pr-4 font-bold text-slate-900 outline-none" />
                 </div>
               </div>
             </div>
 
             {isVerified && (
-              <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100 animate-app-in">
-                <p className="text-[10px] font-black text-emerald-700 uppercase tracking-widest mb-1">Dados Localizados:</p>
+              <div className="p-5 bg-emerald-50 rounded-[2rem] border border-emerald-100 animate-app-in">
+                <div className="flex items-center gap-2 mb-2">
+                   <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+                   <p className="text-[10px] font-black text-emerald-700 uppercase tracking-widest">Empresa Ativa e Localizada</p>
+                </div>
                 <p className="text-[11px] font-bold text-emerald-800 leading-tight">
-                  {formData.logradouro}, {formData.municipio} - {formData.uf}<br/>
-                  <span className="opacity-60">{formData.cnae_desc}</span>
+                  {formData.logradouro}<br/>
+                  {formData.municipio} - {formData.uf}<br/>
+                  <span className="opacity-60 block mt-1">{formData.cnae_desc}</span>
                 </p>
               </div>
             )}
             
-            <Button 
-              fullWidth 
-              variant="black" 
-              size="lg" 
-              className={`mt-6 h-16 transition-all ${isVerified ? 'bg-indigo-600' : 'bg-slate-300'}`} 
-              type="button" 
-              onClick={handleNext}
-              disabled={!isVerified}
-            >
-              Continuar
-            </Button>
+            <div className="pt-4">
+              <Button 
+                fullWidth 
+                variant="black" 
+                size="lg" 
+                className={`h-16 shadow-lg transition-all ${isVerified ? 'bg-indigo-600' : 'bg-slate-300 grayscale opacity-50'}`} 
+                type="button" 
+                onClick={handleNext}
+                disabled={!isVerified || isSearching}
+              >
+                {isSearching ? "Consultando..." : "Prosseguir"}
+              </Button>
+            </div>
           </div>
         ) : (
-          <div className="space-y-4 animate-app-in">
+          <div className="space-y-5 animate-app-in">
              <div className="space-y-1">
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">E-mail Corporativo</label>
-              <input required type="email" placeholder="financeiro@empresa.com" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="w-full h-14 bg-white rounded-2xl border border-slate-200 px-6 font-bold text-slate-900 outline-none" />
+              <input required type="email" placeholder="financeiro@empresa.com" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="w-full h-16 bg-white rounded-2xl border border-slate-200 px-6 font-bold text-slate-900 outline-none" />
             </div>
             <div className="space-y-1">
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Senha de Acesso</label>
-              <input required type="password" placeholder="••••••••" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} className="w-full h-14 bg-white rounded-2xl border border-slate-200 px-6 font-bold text-slate-900 outline-none" />
+              <input required type="password" placeholder="Mínimo 6 caracteres" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} className="w-full h-16 bg-white rounded-2xl border border-slate-200 px-6 font-bold text-slate-900 outline-none" />
             </div>
             <div className="space-y-1">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Telefone / WhatsApp</label>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">WhatsApp de Contato</label>
               <div className="relative">
                 <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
-                <input required placeholder="(00) 00000-0000" value={formData.telefone} onChange={e => setFormData({...formData, telefone: e.target.value})} className="w-full h-14 bg-white rounded-2xl border border-slate-200 pl-12 pr-4 font-bold text-slate-900 outline-none" />
+                <input required placeholder="(00) 00000-0000" value={formData.telefone} onChange={e => setFormData({...formData, telefone: e.target.value})} className="w-full h-16 bg-white rounded-2xl border border-slate-200 pl-12 pr-4 font-bold text-slate-900 outline-none" />
               </div>
             </div>
-            <Button fullWidth variant="black" size="lg" className="mt-6 bg-indigo-600 h-16" isLoading={isLoading} type="submit">Concluir Cadastro</Button>
+            <div className="pt-6">
+              <Button 
+                fullWidth 
+                variant="black" 
+                size="lg" 
+                className="bg-indigo-600 h-16 shadow-xl" 
+                isLoading={isRegistering} 
+                type="submit"
+              >
+                Criar Conta PJ
+              </Button>
+            </div>
           </div>
         )}
       </form>

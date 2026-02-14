@@ -33,7 +33,7 @@ const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode,
   // Fallback para role cacheada para evitar loading desnecessário
   const userType = profile?.tipo_usuario || localStorage.getItem('ajudaja_user_type');
 
-  if (!authChecked && !userType) return <LoadingScreen />;
+  if (!authChecked) return <LoadingScreen />;
 
   if (!user) {
     return <Navigate to="/onboarding" state={{ from: location }} replace />;
@@ -52,7 +52,8 @@ const AppRoutes = () => {
   const { user, profile, authChecked } = useApp();
   const userType = profile?.tipo_usuario || localStorage.getItem('ajudaja_user_type');
 
-  if (!authChecked && !userType) return <LoadingScreen />;
+  // Fast Sync: Se estiver autenticado, sincroniza e redireciona
+  if (!authChecked) return <LoadingScreen />;
 
   const getHomeElement = () => {
     if (!user) return <Navigate to="/onboarding" replace />;
@@ -65,6 +66,7 @@ const AppRoutes = () => {
   return (
     <Suspense fallback={<LoadingScreen />}>
       <Routes>
+        {/* Onboarding é apenas para quem NÃO está logado */}
         <Route path="/onboarding" element={user ? <Navigate to="/" replace /> : <Onboarding />} />
         <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />
         <Route path="/signup" element={user ? <Navigate to="/" replace /> : <Signup />} />

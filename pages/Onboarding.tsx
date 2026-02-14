@@ -1,9 +1,8 @@
 
 import React from 'react';
-// Fixed: Changed import source from react-router-dom to react-router
 import { useNavigate } from 'react-router';
 import Button from '../components/Button';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, LogIn } from 'lucide-react';
 
 const Onboarding = () => {
   const navigate = useNavigate();
@@ -27,16 +26,16 @@ const Onboarding = () => {
         </header>
 
         <section className="mt-12">
-          <h1 className="text-[3.5rem] font-black text-[#111111] leading-[0.95] tracking-tighter mb-8">
+          <h1 className="text-[3.5rem] font-black text-[#111111] leading-[0.9] tracking-tighter mb-8">
             Impacto <br/>Real. <br/><span className="opacity-40">Agora.</span>
           </h1>
-          <p className="text-[#111111] font-bold text-xl leading-snug max-w-[280px]">
+          <p className="text-[#111111] font-bold text-lg leading-snug max-w-[280px]">
             Conectando solidariedade com a agilidade de um banco digital.
           </p>
         </section>
 
         <div className="flex flex-col items-center">
-          <div className="relative w-full max-w-[240px] mb-16">
+          <div className="relative w-full max-w-[220px] mb-12">
             <img 
               src="https://i.postimg.cc/15FXPBTV/20260202-061509.png" 
               alt="Mascote" 
@@ -44,23 +43,32 @@ const Onboarding = () => {
             />
           </div>
 
-          <Button 
-            fullWidth 
-            size="lg" 
-            variant="black" 
-            onClick={() => navigate('/signup')} 
-            className="h-20 text-xl rounded-[2.5rem] flex justify-between px-10"
-          >
-            Começar jornada
-            <ArrowRight size={24} className="text-[#C6F64E]" />
-          </Button>
+          <div className="w-full space-y-3">
+            <Button 
+              fullWidth 
+              size="lg" 
+              variant="black" 
+              onClick={() => navigate('/signup')} 
+              className="h-20 text-xl rounded-[2.5rem] flex justify-between px-10 shadow-2xl"
+            >
+              Começar
+              <ArrowRight size={24} className="text-[#C6F64E]" />
+            </Button>
+            
+            <button 
+              onClick={() => navigate('/login')}
+              className="w-full h-16 bg-white/20 backdrop-blur-md rounded-[2rem] border border-white/30 text-[#111111] font-black uppercase text-sm tracking-widest flex items-center justify-center gap-2 active:scale-95 transition-all"
+            >
+              <LogIn size={20} /> Entrar na conta
+            </button>
+          </div>
         </div>
       </div>
 
       <footer className="pb-safe pt-8 relative z-10">
         <div className="text-center">
-          <p className="text-[#111111]/60 font-bold text-sm">
-            Já possui conta? <button onClick={() => navigate('/login')} className="text-[#111111] underline font-black">Entrar</button>
+          <p className="text-[#111111]/40 font-black text-[10px] uppercase tracking-widest">
+            Auditado & Seguro
           </p>
         </div>
       </footer>

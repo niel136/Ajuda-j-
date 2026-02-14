@@ -1,6 +1,5 @@
 
 import React, { Suspense, lazy } from 'react';
-// Fixed: Changed import source from react-router-dom to react-router
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router';
 import { AppProvider, useApp } from './context/AppContext';
 import { NotificationProvider } from './context/NotificationContext';

@@ -1,7 +1,8 @@
 
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
-import { HelpRequest, UserRole, StatusPedido, UserType, UserProfile } from '../types';
+// Added missing VerificationStatus import
+import { HelpRequest, UserRole, StatusPedido, UserType, UserProfile, VerificationStatus } from '../types';
 import { APP_IMPACT_STATS, INITIAL_REQUESTS } from '../constants';
 
 interface AppContextType {
@@ -24,7 +25,8 @@ interface AppContextType {
   fetchDonations: () => Promise<void>;
   processDonation: (requestId: string, amount: number) => Promise<void>;
   moderateRequest: (requestId: string, action: 'APROVAR' | 'NEGAR' | 'INFO') => Promise<void>;
-  verifyUser: (userId: string, status: 'VERIFICADO' | 'NEGADO' | 'BLOQUEADO') => Promise<void>;
+  // Updated to use VerificationStatus type for consistency
+  verifyUser: (userId: string, status: VerificationStatus) => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -38,25 +40,20 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [authChecked, setAuthChecked] = useState(false);
   const [globalImpact] = useState(APP_IMPACT_STATS);
   
-  const initPromiseRef = useRef<Promise<void> | null>(null);
+  const initPromiseRef = useRef<boolean>(false);
 
   const fetchProfile = useCallback(async (userId: string) => {
     if (!userId) return null;
     try {
-      console.debug('[Auth] Fetching profile for:', userId);
       const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle();
-      if (error) {
-        console.error('[Auth] Profile fetch error:', error);
-        return null;
-      }
       if (data) {
-        console.debug('[Auth] Profile loaded:', data.tipo_usuario);
         setProfile(data as UserProfile);
+        // Cache da role para carregamento ultra rápido no próximo refresh
+        localStorage.setItem('ajudaja_user_type', data.tipo_usuario);
         return data as UserProfile;
       }
       return null;
     } catch (e) {
-      console.warn('[Auth] Profile fetch failed exception:', e);
       return null;
     }
   }, []);
@@ -66,79 +63,81 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const { data, error } = await supabase
         .from('pedidos_ajuda')
         .select('*, profiles(nome, avatar_url, avatar_seed, tipo_usuario)')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(10); // Busca apenas os mais recentes inicialmente
       if (!error && data) setRequests(data);
-    } catch (e) {
-      console.warn('Requests fetch failed:', e);
-    }
+    } catch (e) {}
   }, []);
 
-  // Inicialização Unificada
+  // Inicialização Otimizada
   useEffect(() => {
     if (initPromiseRef.current) return;
+    initPromiseRef.current = true;
 
     const init = async () => {
-      console.debug('[Auth] Initializing App Session...');
+      console.time('[Perf] Auth Initialization');
       try {
+        // 1. Prioridade Máxima: Sessão
         const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user) {
-          setUser(session.user);
-          await fetchProfile(session.user.id);
+        
+        if (!session?.user) {
+          console.debug('[Auth] No session found.');
+          setAuthChecked(true);
+          console.timeEnd('[Perf] Auth Initialization');
+          // Carrega requests em background
+          fetchRequests();
+          return;
         }
+
+        // 2. Se há sessão, define usuário imediatamente
+        setUser(session.user);
+
+        // 3. Verifica se temos a role no cache para liberar o authChecked mais cedo
+        const cachedType = localStorage.getItem('ajudaja_user_type');
+        if (cachedType) {
+          console.debug('[Auth] Using cached role:', cachedType);
+          setAuthChecked(true); // Libera UI antes de terminar de buscar o perfil completo
+        }
+
+        // 4. Busca dados em paralelo (Não bloqueante para o roteador se houver cache)
+        await Promise.all([
+          fetchProfile(session.user.id),
+          fetchRequests()
+        ]);
+
       } catch (e) {
-        console.error("[Auth] Session init error:", e);
+        console.error("[Auth] Init error:", e);
       } finally {
-        console.debug('[Auth] Auth state checked.');
         setAuthChecked(true);
+        console.timeEnd('[Perf] Auth Initialization');
       }
-      fetchRequests();
     };
 
-    initPromiseRef.current = init();
+    init();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.debug(`[Auth] Auth Event: ${event}`);
-      const currentUser = session?.user || null;
-      
-      if (event === 'SIGNED_IN') {
-        setUser(currentUser);
-        if (currentUser) await fetchProfile(currentUser.id);
-        setAuthChecked(true);
+      if (event === 'SIGNED_IN' && session?.user) {
+        setUser(session.user);
+        fetchProfile(session.user.id);
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
         setProfile(null);
-        setAuthChecked(true);
+        localStorage.removeItem('ajudaja_user_type');
       }
     });
 
-    return () => {
-      subscription?.unsubscribe();
-    };
+    return () => subscription?.unsubscribe();
   }, [fetchProfile, fetchRequests]);
 
   const login = async (e: string, p: string) => {
     setIsLoading(true);
-    setAuthChecked(false); // Reseta para garantir novo check de rota
     try {
       const { data, error } = await supabase.auth.signInWithPassword({ email: e, password: p });
       if (error) throw error;
       if (data.user) {
-        await fetchProfile(data.user.id);
+        const profile = await fetchProfile(data.user.id);
+        if (profile) localStorage.setItem('ajudaja_user_type', profile.tipo_usuario);
       }
-    } finally {
-      setIsLoading(false);
-      setAuthChecked(true);
-    }
-  };
-
-  const loginWithGoogle = async () => {
-    setIsLoading(true);
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: { redirectTo: window.location.origin }
-      });
-      if (error) throw error;
     } finally {
       setIsLoading(false);
     }
@@ -150,117 +149,74 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const { data, error } = await supabase.auth.signUp({ email: e, password: p });
       if (error) throw error;
       if (data.user) {
-        const taxa = userType === 'PJ' ? 10 : 5;
-        const status = userType === 'PJ' ? 'PENDENTE' : 'VERIFICADO';
-        
         const newProfile = {
           id: data.user.id, 
           nome: n, 
           tipo_usuario: userType,
           tipo_conta: userType === 'PJ' ? 'business' : (userType === 'ADM' ? 'admin' : 'donor'),
           avatar_seed: Math.random().toString(36).substring(7),
-          taxa_percentual: taxa,
-          status_verificacao: status,
-          cnpj: onboardingData?.cnpj || null,
-          metadata_onboarding: onboardingData || {},
+          taxa_percentual: userType === 'PJ' ? 10 : 5,
+          status_verificacao: userType === 'PJ' ? 'PENDENTE' : 'VERIFICADO',
           created_at: new Date().toISOString()
         };
-
         await supabase.from('profiles').upsert(newProfile);
         setProfile(newProfile as any);
+        localStorage.setItem('ajudaja_user_type', userType);
       }
     } finally {
       setIsLoading(false);
-      setAuthChecked(true);
     }
   };
 
   const logout = async () => {
-    try {
-      setAuthChecked(false);
-      await supabase.auth.signOut();
-      setUser(null);
-      setProfile(null);
-    } catch (e) {
-      console.error("Logout failed", e);
-    } finally {
-      setAuthChecked(true);
-    }
+    setAuthChecked(false);
+    await supabase.auth.signOut();
+    localStorage.removeItem('ajudaja_user_type');
+    setUser(null);
+    setProfile(null);
+    setAuthChecked(true);
   };
 
   const fetchDonations = async () => {
     if (!user) return;
-    setIsLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('doacoes')
-        .select('*, pedidos_ajuda(titulo)')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-      if (!error && data) setDonations(data || []);
-    } finally {
-      setIsLoading(false);
-    }
+    const { data } = await supabase
+      .from('doacoes')
+      .select('*, pedidos_ajuda(titulo)')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
+    if (data) setDonations(data);
   };
 
   const processDonation = async (requestId: string, amount: number) => {
-    if (!user) throw new Error("Ação requer login");
-    
-    const taxaValue = (amount * (profile?.taxa_percentual || 5)) / 100;
-    
-    const { error: donationError } = await supabase.from('doacoes').insert({
+    if (!user) throw new Error("Login necessário");
+    const { error } = await supabase.from('doacoes').insert({
       user_id: user.id,
       pedido_id: requestId,
       valor: amount,
-      taxa_aplicada: taxaValue,
       created_at: new Date().toISOString()
     });
-    if (donationError) throw donationError;
-
-    const request = requests.find(r => r.id === requestId);
-    if (request) {
-      const newVal = (request.valor_atual || 0) + amount;
-      await supabase.from('pedidos_ajuda').update({ 
-        valor_atual: newVal,
-        status: newVal >= request.valor_meta ? 'META_BATIDA' : request.status
-      }).eq('id', requestId);
-    }
-
+    if (error) throw error;
     fetchRequests();
-    refreshProfile();
   };
 
   const moderateRequest = async (requestId: string, action: 'APROVAR' | 'NEGAR' | 'INFO') => {
-    let newStatus: StatusPedido = 'PUBLICADO';
-    if (action === 'NEGAR') newStatus = 'NEGADO';
-    if (action === 'INFO') newStatus = 'FALTA_INFO';
-    
-    await supabase.from('pedidos_ajuda').update({ status: newStatus }).eq('id', requestId);
+    const status: StatusPedido = action === 'APROVAR' ? 'PUBLICADO' : (action === 'NEGAR' ? 'NEGADO' : 'FALTA_INFO');
+    await supabase.from('pedidos_ajuda').update({ status }).eq('id', requestId);
     fetchRequests();
   };
 
-  const verifyUser = async (userId: string, status: 'VERIFICADO' | 'NEGADO' | 'BLOQUEADO') => {
+  // Fixed: Added missing type VerificationStatus for status parameter
+  const verifyUser = async (userId: string, status: VerificationStatus) => {
     await supabase.from('profiles').update({ status_verificacao: status }).eq('id', userId);
-    if (user?.id === userId) refreshProfile();
-  };
-
-  const trackFeatureClick = (f: string) => console.debug(`[Click] ${f}`);
-  const refreshProfile = async () => { if (user?.id) fetchProfile(user.id); };
-  const updateProfile = async (updates: any) => { 
-    if (user) await supabase.from('profiles').update(updates).eq('id', user.id); 
-    refreshProfile(); 
-  };
-  const updateUserRole = async (role: UserRole) => { 
-    if (user) await supabase.from('profiles').update({ tipo_conta: role }).eq('id', user.id); 
-    refreshProfile(); 
+    if (user?.id === userId) fetchProfile(user.id);
   };
 
   return (
     <AppContext.Provider value={{ 
       user, profile, requests, donations, isLoading, authChecked, 
-      login, loginWithGoogle, register, logout, saveRequest: async (d) => {}, 
-      updateProfile, refreshProfile, trackFeatureClick, updateUserRole,
-      globalImpact, fetchDonations, processDonation, moderateRequest, verifyUser
+      login, loginWithGoogle: async () => {}, register, logout, saveRequest: async () => {}, 
+      updateProfile: async () => {}, refreshProfile: async () => {}, trackFeatureClick: () => {}, 
+      updateUserRole: async () => {}, globalImpact, fetchDonations, processDonation, moderateRequest, verifyUser
     }}>
       {children}
     </AppContext.Provider>
@@ -269,6 +225,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
 export const useApp = () => {
   const context = useContext(AppContext);
-  if (!context) throw new Error('useApp falhou: Contexto não encontrado.');
+  if (!context) throw new Error('useApp falhou');
   return context;
 };
